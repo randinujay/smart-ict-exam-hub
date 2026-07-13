@@ -3,17 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/env";
+import type { ActionState } from "@/lib/action-state";
 import { isValidSriLankanMobile, normalizeSriLankanPhone, studentEmailAlias } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-
-export interface ActionState {
-  ok: boolean;
-  message: string;
-  fieldErrors?: Record<string, string>;
-}
-
-export const initialActionState: ActionState = { ok: false, message: "" };
 
 function required(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();

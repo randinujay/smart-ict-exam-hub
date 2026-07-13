@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { ArrowRight, LoaderCircle } from "lucide-react";
-import { initialActionState, studentLoginAction } from "@/app/actions/auth";
+import { studentLoginAction } from "@/app/actions/auth";
+import { initialActionState } from "@/lib/action-state";
 
 export function StudentLoginForm() {
   const [state, action, pending] = useActionState(studentLoginAction, initialActionState);
