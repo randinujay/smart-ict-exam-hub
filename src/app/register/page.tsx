@@ -1,0 +1,6 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { RegisterForm } from "@/components/auth/register-form";
+export const metadata: Metadata={title:"Create Student Account",robots:{index:false,follow:false}};
+export default function RegisterPage(){return <main className="registration-page"><header className="registration-header"><Logo/><div>Already registered? <Link href="/login" className="button button-outline button-small">Sign in</Link></div></header><section className="registration-shell"><div className="registration-intro"><span className="section-kicker">CREATE YOUR LMS ACCOUNT</span><h1>Start with free access. Unlock class content when verified.</h1><p>Your details are used to maintain an accurate Smart ICT student record. Registration information is locked after submission, except a missing NIC can be added once later.</p><div className="registration-status-flow"><span><b>1</b><div><strong>Register</strong><small>Enter the required student details</small></div></span><span><b>2</b><div><strong>Enter the LMS</strong><small>Use free modules and resources</small></div></span><span><b>3</b><div><strong>Get verified</strong><small>Admin unlocks exclusive content</small></div></span></div></div><div className="registration-card"><RegisterForm/></div></section></main>}
