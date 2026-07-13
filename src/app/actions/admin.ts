@@ -42,6 +42,26 @@ function requireWebUrl(input: string, label: string, allowLocalPath = false) {
   }
 }
 
+export async function changeAdminPasswordAction(formData: FormData) {
+  const supabase = await requireAdmin();
+  if (!supabase) return;
+
+  const currentPassword = value(formData, "currentPassword");
+  const newPassword = value(formData, "newPassword");
+  const confirmPassword = value(formData, "confirmPassword");
+  if (newPassword.length < 10) redirect("/adminrandinu/settings?password=weak");
+  if (newPassword !== confirmPassword) redirect("/adminrandinu/settings?password=mismatch");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) redirect("/adminrandinu/settings?password=error");
+  const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+  if (reauthError) redirect("/adminrandinu/settings?password=invalid-current");
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) redirect("/adminrandinu/settings?password=error");
+  redirect("/adminrandinu/settings?password=changed");
+}
+
 export async function createProgramAction(formData: FormData) {
   const supabase = await requireAdmin();
   if (!supabase) return;

@@ -659,6 +659,9 @@ h1,h2,h3 { letter-spacing: -.035em; }
 .support-resolution-form { display:flex; gap:8px; align-items:center; }
 .support-resolution-form input,.support-resolution-form select { border:1px solid #ddd; border-radius:9px; padding:9px; }
 .settings-status { display:flex; align-items:center; gap:8px; color:var(--green); font-size:.78rem; font-weight:800; }
+.password-settings-card { margin-top:22px; display:grid; grid-template-columns:minmax(0,.8fr) minmax(340px,1.2fr); gap:46px; align-items:start; }
+.password-settings-card > div > p { color:var(--muted); line-height:1.7; }
+.password-settings-card .auth-form { margin:0; }
 
 /* Builder */
 .assessment-builder { display:grid; gap:18px; }
@@ -704,6 +707,7 @@ h1,h2,h3 { letter-spacing: -.035em; }
   .public-nav { position:absolute; left:14px; right:14px; top:70px; background:white; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-md); padding:15px; flex-direction:column; align-items:stretch; gap:3px; opacity:0; visibility:hidden; transform:translateY(-8px); transition:.2s; }
   .public-nav.is-open { opacity:1; visibility:visible; transform:none; }
   .public-nav > a:not(.button) { padding:11px; }
+  .password-settings-card { grid-template-columns:1fr; gap:22px; }
   .public-nav > a:not(.button):after { display:none; }
   .nav-login { margin:7px 0 0; }
   .brand-hero-grid,.teacher-feature-grid,.lms-showcase-shell,.faq-preview-grid,.inner-hero-grid,.program-detail-grid,.about-hero-grid,.about-story-grid,.two-column-content,.lms-feature-detail-grid,.contact-page-grid { grid-template-columns:1fr; }
