@@ -1,5 +1,22 @@
 import type { Metadata } from "next";
+import { Google_Sans_Flex, Noto_Sans_Sinhala } from "next/font/google";
 import "./globals.css";
+
+const googleSans = Google_Sans_Flex({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-google-sans",
+  fallback: ["Arial", "sans-serif"],
+  adjustFontFallback: false,
+});
+
+const notoSansSinhala = Noto_Sans_Sinhala({
+  subsets: ["sinhala"],
+  display: "swap",
+  variable: "--font-noto-sinhala",
+  fallback: ["Arial", "sans-serif"],
+  adjustFontFallback: false,
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
@@ -19,5 +36,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en" className={`${googleSans.variable} ${notoSansSinhala.variable}`}><body>{children}</body></html>;
 }
