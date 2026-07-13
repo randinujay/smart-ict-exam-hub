@@ -80,7 +80,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_EMAIL=randinujayaratne15@gmail.com
-STUDENT_EMAIL_DOMAIN=students.smartict.local
+STUDENT_EMAIL_DOMAIN=students.smartict.lk
 ```
 
 The service-role key is server-only. Never expose it with a `NEXT_PUBLIC_` prefix.

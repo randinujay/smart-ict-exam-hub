@@ -20,7 +20,7 @@ export function PublicHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={pathname === item.href ? "active" : ""}
+              className={item.href === "/" && pathname === "/" ? "active" : ""}
               onClick={() => setOpen(false)}
             >
               {item.label}

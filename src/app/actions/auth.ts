@@ -58,35 +58,43 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const normalizedPhone = normalizeSriLankanPhone(phone);
   const alias = studentEmailAlias(normalizedPhone);
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return { ok: false, message: "Registration is temporarily unavailable. Please contact Smart ICT." };
+  }
+
+  // Phone numbers are represented as internal email aliases because students log
+  // in with phone + password. Admin creation confirms that alias immediately, so
+  // the account never depends on an email that cannot receive confirmation links.
+  const { data, error } = await admin.auth.admin.createUser({
     email: alias,
     password,
-    options: {
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        full_name: `${firstName} ${lastName}`,
-        contact_number: normalizedPhone,
-        date_of_birth: dateOfBirth,
-        nic: nic ? nic.toUpperCase() : null,
-        address,
-        school,
-        medium,
-        registration_source: "public_lms",
-      },
+    email_confirm: true,
+    user_metadata: {
+      first_name: firstName,
+      last_name: lastName,
+      full_name: `${firstName} ${lastName}`,
+      contact_number: normalizedPhone,
+      date_of_birth: dateOfBirth,
+      nic: nic ? nic.toUpperCase() : null,
+      address,
+      school,
+      medium,
+      registration_source: "public_lms",
     },
   });
-  if (error || !data.user || data.user.identities?.length === 0) {
-    const duplicate = data.user?.identities?.length === 0 || error?.message.toLowerCase().includes("already") || error?.message.toLowerCase().includes("registered");
+  if (error || !data.user) {
+    const errorMessage = error?.message.toLowerCase() ?? "";
+    const duplicate = errorMessage.includes("already") || errorMessage.includes("registered") || errorMessage.includes("exists");
     return { ok: false, message: duplicate ? "An account already exists for this mobile number." : "We could not create the account. Please try again or contact support." };
   }
 
-  if (!data.session) {
-    // Synthetic student emails cannot receive confirmation links. Avoid leaving
-    // an unusable account when the Supabase project is misconfigured.
-    const admin = createAdminClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email: alias, password });
+  if (signInError) {
     await admin.auth.admin.deleteUser(data.user.id);
-    return { ok: false, message: "Registration is temporarily unavailable. Smart ICT has been notified." };
+    return { ok: false, message: "The account could not be activated. Please try again or contact Smart ICT." };
   }
 
   // Registration itself is the verification request. The administrator sees both

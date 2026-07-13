@@ -18,12 +18,12 @@ export const BRAND = {
 
 export const PUBLIC_NAV = [
   { label: "Home", href: "/" },
-  { label: "Programs", href: "/programs" },
-  { label: "About", href: "/about" },
-  { label: "Smart ICT LMS", href: "/smart-lms" },
-  { label: "Results", href: "/results" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "/contact" },
+  { label: "Programs", href: "/#programs" },
+  { label: "About", href: "/#about" },
+  { label: "Smart ICT LMS", href: "/#smart-lms" },
+  { label: "Reviews", href: "/#reviews" },
+  { label: "FAQ", href: "/#faq" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export const STUDENT_NAV = [

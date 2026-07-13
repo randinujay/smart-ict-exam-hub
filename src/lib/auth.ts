@@ -1,4 +1,6 @@
-const DEFAULT_DOMAIN = "students.smartict.local";
+// Supabase Auth rejects reserved local-only domains such as `.local`.
+// This alias is never used for email delivery; it maps a phone login to Auth.
+const DEFAULT_DOMAIN = "students.smartict.lk";
 
 export function normalizeSriLankanPhone(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -18,7 +20,8 @@ export function displayPhone(value: string) {
 
 export function studentEmailAlias(phone: string) {
   const normalized = normalizeSriLankanPhone(phone);
-  const domain = process.env.STUDENT_EMAIL_DOMAIN || DEFAULT_DOMAIN;
+  const configuredDomain = process.env.STUDENT_EMAIL_DOMAIN?.trim().toLowerCase();
+  const domain = configuredDomain && !configuredDomain.endsWith(".local") ? configuredDomain : DEFAULT_DOMAIN;
   return `${normalized}@${domain}`;
 }
 
