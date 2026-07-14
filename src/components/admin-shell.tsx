@@ -6,6 +6,7 @@ import { ArrowUpRight, LogOut, Menu, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
+import { WorkspaceThemeToggle } from "@/components/workspace-theme-toggle";
 import { ADMIN_NAV } from "@/lib/config";
 import { signOutAction } from "@/app/actions/auth";
 
@@ -43,7 +44,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <header className="workspace-topbar admin-topbar">
           <button className="workspace-menu" type="button" onClick={() => setOpen(true)} aria-label="Open navigation"><Menu size={23} /></button>
           <div className="workspace-topbar-title"><span>Randinu Jayaratne</span><strong>Smart ICT Administration</strong></div>
-          <div className="admin-owner-chip"><span className="workspace-avatar">RJ</span><div><strong>Randinu</strong><small>Administrator</small></div></div>
+          <div className="workspace-user-actions"><WorkspaceThemeToggle /><div className="admin-owner-chip"><span className="workspace-avatar">RJ</span><div><strong>Randinu</strong><small>Administrator</small></div></div></div>
         </header>
         <main className="workspace-content admin-content">{children}</main>
       </div>

@@ -1126,3 +1126,78 @@ html { scroll-padding-top:94px; }
   .registration-signin .button { min-height:36px; padding-inline:12px; }
   .footer-socials { margin-top:18px; }
 }
+
+/* Final alignment and workspace theme controls */
+@media (min-width:901px) {
+  .brand-hero-copy { max-width:980px; margin-inline:auto; text-align:center; }
+  .brand-hero-copy h1 { margin-inline:auto; }
+  .hero-actions { justify-content:center; }
+}
+
+.why-card { align-items:center; text-align:center; }
+.why-icon { margin-inline:auto; }
+
+.workspace-theme-toggle {
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:white;
+  color:#222;
+}
+.workspace-theme-toggle:hover { border-color:#aaa; background:#f5f5f6; }
+
+html[data-workspace-theme="dark"] .workspace-shell {
+  color-scheme:dark;
+  --ink:#f5f5f5;
+  --muted:#a1a1aa;
+  --line:#303036;
+  --soft:#1d1d21;
+  --white:#17171a;
+  --red-soft:#351014;
+  color:#f5f5f5;
+  background:#0d0d0f;
+}
+html[data-workspace-theme="dark"] .workspace-main,
+html[data-workspace-theme="dark"] .workspace-content { background:#0d0d0f; }
+html[data-workspace-theme="dark"] .workspace-sidebar { background:#131316; border-color:#303036; }
+html[data-workspace-theme="dark"] .workspace-topbar { background:rgba(19,19,22,.92); border-color:#303036; }
+html[data-workspace-theme="dark"] .workspace-nav a { color:#b4b4bc; }
+html[data-workspace-theme="dark"] .workspace-nav a:hover { color:white; background:#242429; }
+html[data-workspace-theme="dark"] .workspace-theme-toggle { color:#f5f5f5; background:#202024; border-color:#38383e; }
+html[data-workspace-theme="dark"] .workspace-theme-toggle:hover { background:#29292e; border-color:#56565f; }
+html[data-workspace-theme="dark"] .workspace-content [class*="-card"],
+html[data-workspace-theme="dark"] .workspace-content [class*="-panel"],
+html[data-workspace-theme="dark"] .workspace-content [class*="-table"],
+html[data-workspace-theme="dark"] .workspace-content .admin-toolbar,
+html[data-workspace-theme="dark"] .workspace-content .empty-state {
+  color:#f5f5f5;
+  background:#17171a;
+  border-color:#303036;
+}
+html[data-workspace-theme="dark"] .workspace-content .dashboard-welcome,
+html[data-workspace-theme="dark"] .workspace-content .whatsapp-support-card { background:linear-gradient(135deg,#111114,#260004 65%,#590006); }
+html[data-workspace-theme="dark"] .workspace-content .insight-item,
+html[data-workspace-theme="dark"] .workspace-content .bank-instruction,
+html[data-workspace-theme="dark"] .workspace-content .payment-note,
+html[data-workspace-theme="dark"] .workspace-content .profile-correction-note,
+html[data-workspace-theme="dark"] .workspace-content .quick-access-list a,
+html[data-workspace-theme="dark"] .workspace-content .resource-mini-list a,
+html[data-workspace-theme="dark"] .workspace-content .assessment-mini-list a { background:#202024; border-color:#34343a; }
+html[data-workspace-theme="dark"] .workspace-content input,
+html[data-workspace-theme="dark"] .workspace-content select,
+html[data-workspace-theme="dark"] .workspace-content textarea,
+html[data-workspace-theme="dark"] .workspace-content .button-outline,
+html[data-workspace-theme="dark"] .workspace-content .button-ghost { color:#f5f5f5; background:#202024; border-color:#3a3a40; }
+html[data-workspace-theme="dark"] .workspace-content p,
+html[data-workspace-theme="dark"] .workspace-content small { color:#aaaab3; }
+html[data-workspace-theme="dark"] .workspace-content .account-notice { color:#ffd17a; background:#30230d; border-color:#6e5120; }
+html[data-workspace-theme="dark"] .workspace-content .chart-gridline { stroke:#34343a; }
+html[data-workspace-theme="dark"] .workspace-content .chart-point { fill:#17171a; }
+
+@media (max-width:430px) {
+  .workspace-theme-toggle { width:38px; height:38px; }
+}

@@ -6,6 +6,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
+import { WorkspaceThemeToggle } from "@/components/workspace-theme-toggle";
 import { STUDENT_NAV } from "@/lib/config";
 import type { StudentProfile } from "@/lib/types";
 import { signOutAction } from "@/app/actions/auth";
@@ -46,6 +47,7 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
             <strong>Smart ICT LMS</strong>
           </div>
           <div className="workspace-user-actions">
+            <WorkspaceThemeToggle />
             <Link href="/app/profile" className="workspace-profile-chip">
               <span className="workspace-avatar">{initials}</span>
               <span className="workspace-profile-copy"><strong>{student.firstName}</strong><small>{student.accountStatus}</small></span>
