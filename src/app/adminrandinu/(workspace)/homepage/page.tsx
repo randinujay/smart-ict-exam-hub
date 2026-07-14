@@ -6,13 +6,13 @@ import { getPublicSiteContent, getSiteSettings } from "@/lib/data";
 import { PUBLIC_CONTENT_DEFAULTS, type PublicContentKey } from "@/lib/site-content";
 
 const groups: Array<{ title: string; fields: Array<{ key: PublicContentKey; label: string; area?: boolean }> }> = [
-  { title: "Hero", fields: [{ key: "hero_eyebrow", label: "Small heading" }, { key: "hero_title", label: "Main heading" }, { key: "hero_highlight", label: "Highlighted heading" }, { key: "hero_description", label: "Introduction", area: true }] },
-  { title: "Programs", fields: [{ key: "programs_kicker", label: "Small heading" }, { key: "programs_title", label: "Heading" }, { key: "programs_description", label: "Introduction", area: true }] },
+  { title: "Hero", fields: [{ key: "hero_eyebrow", label: "Small heading" }, { key: "hero_title", label: "Main heading" }, { key: "hero_highlight", label: "Highlighted heading" }] },
+  { title: "Programs", fields: [{ key: "programs_kicker", label: "Small heading" }, { key: "programs_title", label: "Heading" }] },
   { title: "About", fields: [{ key: "about_kicker", label: "Small heading" }, { key: "about_title", label: "Heading" }, { key: "about_lead", label: "Lead paragraph", area: true }, { key: "about_body", label: "Body paragraph", area: true }] },
-  { title: "Why Smart ICT", fields: [{ key: "why_kicker", label: "Small heading" }, { key: "why_title", label: "Heading" }, { key: "why_description", label: "Introduction", area: true }] },
+  { title: "Why Smart ICT", fields: [{ key: "why_kicker", label: "Small heading" }, { key: "why_title", label: "Heading" }] },
   { title: "LMS", fields: [{ key: "lms_kicker", label: "Small heading" }, { key: "lms_title", label: "Heading" }, { key: "lms_description", label: "Introduction", area: true }] },
-  { title: "Reviews", fields: [{ key: "reviews_kicker", label: "Small heading" }, { key: "reviews_title", label: "Heading" }, { key: "reviews_description", label: "Introduction", area: true }] },
-  { title: "FAQ", fields: [{ key: "faq_kicker", label: "Small heading" }, { key: "faq_title", label: "Heading" }, { key: "faq_description", label: "Introduction", area: true }] },
+  { title: "Reviews", fields: [{ key: "reviews_kicker", label: "Small heading" }, { key: "reviews_title", label: "Heading" }] },
+  { title: "FAQ", fields: [{ key: "faq_kicker", label: "Small heading" }, { key: "faq_title", label: "Heading" }] },
   { title: "Contact", fields: [{ key: "contact_kicker", label: "Small heading" }, { key: "contact_title", label: "Heading" }] },
 ];
 
@@ -20,11 +20,11 @@ export default async function AdminHomepagePage() {
   const [settings, publicContent] = await Promise.all([getSiteSettings(), getPublicSiteContent()]);
   const content = { ...PUBLIC_CONTENT_DEFAULTS, ...publicContent };
   return <div>
-    <PageHeading eyebrow="PUBLIC WEBSITE" title="Website editor" description="Edit the public homepage without touching code." />
+    <PageHeading eyebrow="PUBLIC WEBSITE" title="Website editor" />
     <form action={updateHomepageContentAction} className="site-editor-form">
+      <input type="hidden" name="hero_description" value={content.hero_description}/><input type="hidden" name="hero_image_url" value={content.hero_image_url}/><input type="hidden" name="programs_description" value={content.programs_description}/><input type="hidden" name="why_description" value={content.why_description}/><input type="hidden" name="reviews_description" value={content.reviews_description}/><input type="hidden" name="faq_description" value={content.faq_description}/>
       <details className="admin-create-panel" open><summary>Hero</summary><div className="admin-form-grid">
         {groups[0].fields.map((field) => <label key={field.key} className={`field ${field.area ? "full" : ""}`}><span>{field.label}</span>{field.area ? <textarea name={field.key} rows={4} defaultValue={content[field.key]} /> : <input name={field.key} defaultValue={content[field.key]} />}</label>)}
-        <PublicImageField name="hero_image_url" label="Teacher portrait" defaultValue={content.hero_image_url} />
       </div></details>
       <details className="admin-create-panel"><summary>About</summary><div className="admin-form-grid">
         {groups[2].fields.map((field) => <label key={field.key} className={`field ${field.area ? "full" : ""}`}><span>{field.label}</span>{field.area ? <textarea name={field.key} rows={4} defaultValue={content[field.key]} /> : <input name={field.key} defaultValue={content[field.key]} />}</label>)}

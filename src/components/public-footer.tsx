@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { MessageCircle, PlayCircle, Users } from "lucide-react";
 import { BRAND, PUBLIC_NAV } from "@/lib/config";
 import { Logo } from "@/components/logo";
+import { SocialIcon } from "@/components/social-icon";
 import { getSiteSettings } from "@/lib/data";
 
 export async function PublicFooter() {
   const settings = await getSiteSettings();
   const socialItems = [
-    { label: "WhatsApp", href: BRAND.socials.whatsapp, icon: MessageCircle },
-    { label: "WhatsApp Channel", href: settings.whatsapp_channel_url || BRAND.socials.whatsappChannel, icon: MessageCircle },
-    { label: "Facebook", href: settings.facebook_url || BRAND.socials.facebook, icon: Users },
-    { label: "YouTube", href: settings.youtube_url || BRAND.socials.youtube, icon: PlayCircle },
+    { label: "WhatsApp", href: BRAND.socials.whatsapp, icon: "whatsapp" as const },
+    { label: "WhatsApp Channel", href: settings.whatsapp_channel_url || BRAND.socials.whatsappChannel, icon: "whatsapp-channel" as const },
+    { label: "Facebook", href: settings.facebook_url || BRAND.socials.facebook, icon: "facebook" as const },
+    { label: "YouTube", href: settings.youtube_url || BRAND.socials.youtube, icon: "youtube" as const },
   ].filter((item) => Boolean(item.href));
 
   return (
@@ -18,11 +18,10 @@ export async function PublicFooter() {
       <div className="site-shell footer-grid">
         <div className="footer-brand">
           <Logo inverse />
-          <p>A modern learning and examination platform built around clear teaching, smart practice and measurable progress.</p>
           <div className="footer-socials">
-            {socialItems.map(({ label, href, icon: Icon }) => (
-              <a key={label} href={href ?? "#"} target="_blank" rel="noreferrer" aria-label={label} title={label}>
-                <Icon size={18} />
+            {socialItems.map(({ label, href, icon }) => (
+              <a key={label} href={href ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={`Open Smart ICT on ${label}`} title={label}>
+                <SocialIcon name={icon} width={18} height={18} />
               </a>
             ))}
           </div>

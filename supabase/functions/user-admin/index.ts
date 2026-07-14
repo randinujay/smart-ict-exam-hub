@@ -18,16 +18,18 @@ Deno.serve(async (request: Request) => {
   try { body = await request.json(); } catch { return respond({ error: "Invalid request." }, 400); }
 
   if (body.operation === "register_student") {
-    if (!validPhone(body.phone) || typeof body.password !== "string" || body.password.length < 8 || typeof body.metadata !== "object" || !body.metadata) {
+    if (!validPhone(body.phone) || !validId(body.programId) || typeof body.password !== "string" || body.password.length < 8 || typeof body.metadata !== "object" || !body.metadata) {
       return respond({ error: "Invalid registration details." }, 400);
     }
     const metadata = body.metadata as Record<string, unknown>;
     const required = ["first_name", "last_name", "date_of_birth", "address", "school", "medium"];
     if (required.some((key) => typeof metadata[key] !== "string" || !(metadata[key] as string).trim())) return respond({ error: "Complete all required registration fields." }, 400);
     if (!['Sinhala', 'English'].includes(String(metadata.medium))) return respond({ error: "Invalid medium." }, 400);
+    const { data: program } = await service.from("programs").select("id").eq("id", body.programId).eq("is_active", true).eq("registration_open", true).maybeSingle();
+    if (!program) return respond({ error: "That program is not open for registration." }, 400);
     const { data, error } = await service.auth.admin.createUser({
       email: `${body.phone}@students.smartict.lk`, password: body.password, email_confirm: true,
-      user_metadata: { ...metadata, contact_number: body.phone, registration_source: "public_lms" },
+      user_metadata: { ...metadata, requested_program_id: body.programId, contact_number: body.phone, registration_source: "public_lms" },
     });
     if (error || !data.user) {
       const duplicate = /already|registered|exists/i.test(error?.message || "");

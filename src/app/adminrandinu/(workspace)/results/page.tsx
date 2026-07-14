@@ -84,7 +84,7 @@ export default async function AdminResultsPage() {
   const structuredAverage = average(published.filter((item) => item.structuredMarks != null).map((item) => item.structuredMarks!));
 
   return <div>
-    <PageHeading eyebrow="MARKS & ANALYTICS" title="Results & performance" description="Monitor program, batch and student performance across online Smart ICT assessments and offline school examinations."/>
+    <PageHeading eyebrow="MARKS & ANALYTICS" title="Results & performance"/>
     <details className="admin-create-panel"><summary><FileUp size={17}/>Import offline marks by CSV</summary><OfflineResultsImporter assessments={data.assessments} demoMode={isDemoMode()}/></details>
 
     <section className="dashboard-stat-grid">

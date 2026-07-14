@@ -30,6 +30,10 @@ create table public.profiles (
   medium public.student_medium not null,
   role public.user_role not null default 'student',
   account_status public.account_status not null default 'pending',
+  requested_program_id uuid,
+  requested_program_status text not null default 'none' check (requested_program_status in ('none','pending','approved','rejected')),
+  requested_program_reviewed_at timestamptz,
+  requested_program_reviewed_by uuid references public.profiles(id) on delete set null,
   verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -52,6 +56,11 @@ create table public.programs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles add constraint profiles_requested_program_id_fkey foreign key(requested_program_id) references public.programs(id) on delete set null;
+create index profiles_requested_program_id_idx on public.profiles(requested_program_id);
+create index profiles_requested_program_status_idx on public.profiles(requested_program_status) where requested_program_status='pending';
+create index profiles_requested_program_reviewed_by_idx on public.profiles(requested_program_reviewed_by);
 
 create table public.batches (
   id uuid primary key default gen_random_uuid(),
@@ -403,8 +412,17 @@ create trigger support_updated before update on public.support_requests for each
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path='' as $$
+declare requested_program uuid;
 begin
-  insert into public.profiles(id,first_name,last_name,date_of_birth,nic,contact_number,address,school,medium,role,account_status)
+  begin
+    requested_program := nullif(new.raw_user_meta_data->>'requested_program_id','')::uuid;
+  exception when invalid_text_representation then
+    requested_program := null;
+  end;
+  if requested_program is not null and not exists(select 1 from public.programs where id=requested_program and is_active and registration_open) then
+    requested_program := null;
+  end if;
+  insert into public.profiles(id,first_name,last_name,date_of_birth,nic,contact_number,address,school,medium,role,account_status,requested_program_id,requested_program_status)
   values(
     new.id,
     coalesce(nullif(new.raw_user_meta_data->>'first_name',''),'New'),
@@ -416,7 +434,9 @@ begin
     coalesce(new.raw_user_meta_data->>'school','Not provided'),
     case when new.raw_user_meta_data->>'medium'='English' then 'English'::public.student_medium else 'Sinhala'::public.student_medium end,
     'student'::public.user_role,
-    'pending'::public.account_status
+    'pending'::public.account_status,
+    requested_program,
+    case when requested_program is null then 'none' else 'pending' end
   );
   return new;
 end $$;
@@ -618,6 +638,8 @@ returns jsonb language sql stable security definer set search_path='' as $$
     'role',p.role,
     'accountStatus',p.account_status,
     'createdAt',p.created_at,
+    'requestedProgramId',p.requested_program_id,
+    'requestedProgramStatus',p.requested_program_status,
     'programIds',coalesce((select jsonb_agg(distinct e.program_id) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb),
     'batchIds',coalesce((select jsonb_agg(distinct e.batch_id) filter (where e.batch_id is not null) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb)
   )
@@ -824,6 +846,7 @@ begin
       'id',p.id,'firstName',p.first_name,'lastName',p.last_name,'fullName',concat_ws(' ',p.first_name,p.last_name),
       'phone',p.contact_number,'dateOfBirth',p.date_of_birth,'nic',p.nic,'address',p.address,'school',p.school,
       'medium',p.medium,'role',p.role,'accountStatus',p.account_status,'createdAt',p.created_at,
+      'requestedProgramId',p.requested_program_id,'requestedProgramStatus',p.requested_program_status,
       'programIds',coalesce((select jsonb_agg(distinct e.program_id) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb),
       'batchIds',coalesce((select jsonb_agg(distinct e.batch_id) filter (where e.batch_id is not null) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb)
     ) order by p.created_at desc) from public.profiles p where p.role='student'),'[]'::jsonb),
@@ -1499,3 +1522,33 @@ using (
       and public.can_access_resource(id)
   )
 );
+
+create or replace function public.review_student_program_request(
+  p_student_id uuid,
+  p_decision text,
+  p_program_id uuid default null,
+  p_batch_id uuid default null
+)
+returns boolean language plpgsql security definer set search_path='' as $$
+begin
+  if not public.is_admin() then raise exception 'Administrator access required'; end if;
+  if p_decision not in ('approve','reject') then raise exception 'Invalid review decision'; end if;
+  if not exists(select 1 from public.profiles where id=p_student_id and role='student') then raise exception 'Student account not found'; end if;
+  if p_decision='reject' then
+    update public.profiles set requested_program_status='rejected',requested_program_reviewed_at=now(),requested_program_reviewed_by=auth.uid()
+    where id=p_student_id and role='student';
+    return true;
+  end if;
+  if p_program_id is null or not exists(select 1 from public.programs where id=p_program_id and is_active) then raise exception 'Select an active program'; end if;
+  if p_batch_id is not null and not exists(select 1 from public.batches where id=p_batch_id and program_id=p_program_id and is_active) then raise exception 'Select a batch from the chosen program'; end if;
+  insert into public.enrollments(student_id,program_id,batch_id,status) values(p_student_id,p_program_id,p_batch_id,'active')
+  on conflict(student_id,program_id,batch_id) do update set status='active';
+  update public.profiles set requested_program_id=p_program_id,requested_program_status='approved',requested_program_reviewed_at=now(),requested_program_reviewed_by=auth.uid(),account_status='verified',verified_at=now()
+  where id=p_student_id and role='student';
+  update public.support_requests set status='resolved',admin_notes='Program request approved.'
+  where student_id=p_student_id and request_type='account_verification' and status in ('open','in_progress');
+  return true;
+end $$;
+
+revoke all on function public.review_student_program_request(uuid,text,uuid,uuid) from public,anon;
+grant execute on function public.review_student_program_request(uuid,text,uuid,uuid) to authenticated;

@@ -5,7 +5,7 @@ export const BRAND = {
   lmsName: "Smart ICT LMS",
   phoneDisplay: "076 770 8978",
   phoneInternational: "94767708978",
-  email: "randinujayaratne15@gmail.com",
+  email: "randinujayaratne@gmail.com",
   location: "Minuwangoda, Sri Lanka",
   qualifications: ["Dip. in Law (Reading)", "Expecting University Entrance"],
   socials: {
@@ -17,13 +17,13 @@ export const BRAND = {
 };
 
 export const PUBLIC_NAV = [
-  { label: "Home", href: "/" },
-  { label: "Programs", href: "/#programs" },
-  { label: "About", href: "/#about" },
-  { label: "Smart ICT LMS", href: "/#smart-lms" },
-  { label: "Reviews", href: "/#reviews" },
-  { label: "FAQ", href: "/#faq" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Home", href: "/#home", sectionId: "home" },
+  { label: "Programs", href: "/#programs", sectionId: "programs" },
+  { label: "About", href: "/#about", sectionId: "about" },
+  { label: "Smart ICT LMS", href: "/#smart-lms", sectionId: "smart-lms" },
+  { label: "Reviews", href: "/#reviews", sectionId: "reviews" },
+  { label: "FAQ", href: "/#faq", sectionId: "faq" },
+  { label: "Contact", href: "/#contact", sectionId: "contact" },
 ];
 
 export const STUDENT_NAV = [

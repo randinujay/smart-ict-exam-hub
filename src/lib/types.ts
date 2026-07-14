@@ -44,6 +44,8 @@ export interface StudentProfile {
   medium: Medium;
   role: "student" | "admin";
   accountStatus: AccountStatus;
+  requestedProgramId?: string | null;
+  requestedProgramStatus?: "none" | "pending" | "approved" | "rejected";
   createdAt: string;
   programIds: string[];
   batchIds: string[];

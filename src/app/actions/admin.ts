@@ -87,7 +87,7 @@ export async function createProgramAction(formData: FormData) {
     is_active: true,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/");
+  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/register"); revalidatePath("/");
 }
 
 export async function createBatchAction(formData: FormData) {
@@ -132,6 +132,27 @@ export async function assignStudentAction(formData: FormData) {
   const studentId=value(formData,"studentId"); const programId=value(formData,"programId"); const batchId=value(formData,"batchId")||null;
   const { error }=await supabase.from("enrollments").upsert({student_id:studentId,program_id:programId,batch_id:batchId,status:"active"},{onConflict:"student_id,program_id,batch_id"});
   if(error) throw new Error(error.message); revalidatePath("/adminrandinu/students");
+}
+
+export async function reviewStudentProgramRequestAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const studentId = value(formData, "studentId");
+  const decision = requireChoice(value(formData, "decision"), ["approve", "reject"], "review decision");
+  const programId = value(formData, "programId") || null;
+  const batchId = value(formData, "batchId") || null;
+  if (decision === "approve" && !programId) throw new Error("Select a program before approval.");
+  const { error } = await supabase.rpc("review_student_program_request", {
+    p_student_id: studentId,
+    p_decision: decision,
+    p_program_id: programId,
+    p_batch_id: batchId,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/dashboard");
+  revalidatePath("/adminrandinu/students");
+  revalidatePath(`/adminrandinu/students/${studentId}`);
+  revalidatePath("/adminrandinu/support");
+  revalidatePath("/app");
 }
 
 export async function markPaymentAction(formData: FormData) {
@@ -259,14 +280,14 @@ export async function updateProgramAction(formData: FormData) {
     is_public: bool(formData, "isPublic"), registration_open: bool(formData, "registrationOpen"), is_active: bool(formData, "isActive"),
   }).eq("id", programId);
   if (error) throw new Error(error.message);
-  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/");
+  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/register"); revalidatePath("/");
 }
 
 export async function deleteProgramAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
   const { error } = await supabase.from("programs").delete().eq("id", value(formData, "programId"));
   if (error) throw new Error(`This program still has linked records. Remove its modules, payments and assignments first. ${error.message}`);
-  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/");
+  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/register"); revalidatePath("/");
 }
 
 export async function updateBatchAction(formData: FormData) {

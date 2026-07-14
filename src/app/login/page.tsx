@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { StudentLoginForm } from "@/components/auth/student-login-form";
-export const metadata: Metadata={title:"Student Login",robots:{index:false,follow:false}};
-export default function LoginPage(){return <main className="auth-page"><section className="auth-visual"><Logo inverse/><div><span className="section-kicker light">SMART ICT LMS</span><h1>Your complete ICT learning journey, in one place.</h1><p>Open monthly modules, download resources, complete assessments and understand how your marks are changing.</p><div className="auth-benefits"><span><CheckCircle2/>Free resources after registration</span><span><CheckCircle2/>Paid monthly content after verification</span><span><CheckCircle2/>Online and offline results together</span></div></div><small>Randinu Jayaratne | Smart ICT</small></section><section className="auth-panel"><div className="auth-panel-inner"><div className="mobile-auth-logo"><Logo/></div><span className="section-kicker">STUDENT SIGN IN</span><h2>Welcome back.</h2><p>Use the mobile number and password connected to your Smart ICT account.</p><StudentLoginForm/><div className="auth-links"><Link href="/forgot-password">Forgot password?</Link><span>New to Smart ICT? <Link href="/register">Create account</Link></span></div><Link href="/" className="auth-back">← Back to public website</Link></div></section></main>}
+
+export const metadata: Metadata = { title: "Student Login", robots: { index: false, follow: false } };
+
+export default function LoginPage() {
+  return <main className="auth-page auth-page-simple"><section className="auth-panel"><div className="auth-panel-inner"><Logo/><span className="section-kicker">STUDENT SIGN IN</span><h1>Welcome back.</h1><StudentLoginForm/><div className="auth-links"><Link href="/forgot-password">Forgot password?</Link><span>New here? <Link href="/register">Create account</Link></span></div><Link href="/" className="auth-back-inline">← Back to public website</Link></div></section></main>;
+}

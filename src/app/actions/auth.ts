@@ -35,58 +35,75 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const address = required(formData, "address");
   const school = required(formData, "school");
   const medium = required(formData, "medium");
+  const programId = required(formData, "programId");
   const password = required(formData, "password");
   const confirmPassword = required(formData, "confirmPassword");
+  const values = { firstName, lastName, dateOfBirth, nic, phone, address, school, medium, programId };
 
   const fieldErrors: Record<string, string> = {};
-  if (firstName.length < 2) fieldErrors.firstName = "Enter the student’s first name.";
-  if (lastName.length < 2) fieldErrors.lastName = "Enter the student’s last name.";
+  if (firstName.length < 2) fieldErrors.firstName = "Enter the first name.";
+  if (lastName.length < 2) fieldErrors.lastName = "Enter the last name.";
   const birthDate = dateOfBirth ? new Date(`${dateOfBirth}T00:00:00+05:30`) : null;
-  if (!birthDate || Number.isNaN(birthDate.getTime()) || birthDate >= new Date()) fieldErrors.dateOfBirth = "Select a valid date of birth in the past.";
-  if (nic && !/^(\d{9}[VXvx]|\d{12})$/.test(nic)) fieldErrors.nic = "Enter a valid Sri Lankan NIC number or leave it blank.";
-  if (!isValidSriLankanMobile(phone)) fieldErrors.phone = "Use a valid Sri Lankan mobile number.";
-  if (address.length < 5) fieldErrors.address = "Enter the student’s address.";
-  if (school.length < 2) fieldErrors.school = "Enter the school name.";
+  if (!birthDate || Number.isNaN(birthDate.getTime()) || birthDate >= new Date()) fieldErrors.dateOfBirth = "Select a valid date of birth.";
+  if (nic && !/^(\d{9}[VXvx]|\d{12})$/.test(nic)) fieldErrors.nic = "Enter a valid NIC or leave it blank.";
+  if (!isValidSriLankanMobile(phone)) fieldErrors.phone = "Use a valid 10-digit Sri Lankan mobile number.";
+  if (address.length < 5) fieldErrors.address = "Enter the address.";
+  if (school.length < 2) fieldErrors.school = "Enter the school.";
   if (!['Sinhala', 'English'].includes(medium)) fieldErrors.medium = "Select the medium.";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(programId)) fieldErrors.programId = "Select a program.";
   if (password.length < 8) fieldErrors.password = "Use at least 8 characters.";
   if (password !== confirmPassword) fieldErrors.confirmPassword = "Passwords do not match.";
-  if (Object.keys(fieldErrors).length) return { ok: false, message: "Check the highlighted registration details.", fieldErrors };
+  if (Object.keys(fieldErrors).length) return { ok: false, message: "Check the highlighted details.", fieldErrors, values };
 
   if (isDemoMode()) redirect("/app/dashboard?demo=1&registered=1");
-  if (!isSupabaseConfigured()) return { ok: false, message: "Registration is temporarily unavailable. Please contact Smart ICT." };
+  if (!isSupabaseConfigured()) return { ok: false, message: "Registration is temporarily unavailable. Please contact Smart ICT.", values };
 
   const normalizedPhone = normalizeSriLankanPhone(phone);
   const alias = studentEmailAlias(normalizedPhone);
   const supabase = await createClient();
+  const { data: requestedProgram, error: programError } = await supabase
+    .from("programs")
+    .select("id,name")
+    .eq("id", programId)
+    .eq("is_active", true)
+    .eq("registration_open", true)
+    .maybeSingle();
+  if (programError || !requestedProgram) {
+    return { ok: false, message: "That program is not open for registration.", fieldErrors: { programId: "Choose an open program." }, values };
+  }
+
   let createdUserId = "";
   try {
     const created = await callUserAdminFunction<{ userId: string }>("register_student", {
       phone: normalizedPhone,
       password,
+      programId,
       metadata: {
-        first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`,
-        date_of_birth: dateOfBirth, nic: nic ? nic.toUpperCase() : null,
-        address, school, medium,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        date_of_birth: dateOfBirth,
+        nic: nic ? nic.toUpperCase() : null,
+        address,
+        school,
+        medium,
+        requested_program_id: programId,
       },
     });
     createdUserId = created.userId;
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "We could not create the account. Please try again or contact support." };
+    return { ok: false, message: error instanceof Error ? error.message : "We could not create the account. Please try again or contact support.", values };
   }
 
   const { error: signInError } = await supabase.auth.signInWithPassword({ email: alias, password });
-  if (signInError) {
-    return { ok: false, message: "The account could not be activated. Please contact Smart ICT." };
-  }
+  if (signInError) return { ok: false, message: "The account could not be activated. Please contact Smart ICT.", values };
 
-  // Registration itself is the verification request. The administrator sees both
-  // the pending profile and this queue item without requiring another student step.
   await supabase.from("support_requests").insert({
     student_id: createdUserId,
     contact_number: normalizedPhone,
     request_type: "account_verification",
     subject: "New student account verification",
-    message: `${firstName} ${lastName} created a Smart ICT LMS account and is awaiting manual review.`,
+    message: `${firstName} ${lastName} requested ${requestedProgram.name} and is awaiting manual review.`,
     status: "open",
   });
 
@@ -126,7 +143,7 @@ export async function requestPasswordHelpAction(_: ActionState, formData: FormDa
     message: "Student requested help resetting the LMS password.",
     status: "open",
   });
-  return error ? { ok: false, message: "Could not submit the request. Please contact Smart ICT through WhatsApp." } : { ok: true, message: "Request submitted. Smart ICT will verify the account and contact you." };
+  return error ? { ok: false, message: "Could not submit the request. Please contact Smart ICT through WhatsApp." } : { ok: true, message: "Request submitted. Smart ICT will contact you." };
 }
 
 export async function signOutAction() {

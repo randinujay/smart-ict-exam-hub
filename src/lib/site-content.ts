@@ -11,7 +11,7 @@ export const PUBLIC_CONTENT_DEFAULTS = {
   about_title: "Learning with Randinu Jayaratne",
   about_lead: "Smart ICT is built around clear communication, student-focused guidance and practical understanding.",
   about_body: "Randinu brings leadership, public-speaking and ICT competition experience together with continuing legal studies and a strong interest in technology and digital transformation.",
-  about_image_url: "/ol-theory-poster.jpg",
+  about_image_url: "/randinu-portrait.jpg",
   why_kicker: "WHY SMART ICT",
   why_title: "A smarter class is more than a video and a PDF.",
   why_description: "Teaching, revision, resources and assessments work together as one learning system.",

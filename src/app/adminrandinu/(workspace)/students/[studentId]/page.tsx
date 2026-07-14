@@ -5,6 +5,7 @@ import { deleteStudentAction, resetStudentPasswordAction, setStudentAccessOverri
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/status-badge";
+import { PasswordInput } from "@/components/password-input";
 import { displayPhone } from "@/lib/auth";
 import { getAdminData } from "@/lib/data";
 
@@ -43,10 +44,10 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
       <aside className="admin-card password-reset-card">
         <span className="settings-icon"><KeyRound/></span><span className="section-kicker">ACCOUNT RECOVERY</span>
-        <h2>Set a temporary password</h2><p>The student can immediately sign in using this password and their registered phone number.</p>
+        <h2>Set a temporary password</h2>
         <form action={resetStudentPasswordAction} className="auth-form">
           <input type="hidden" name="studentId" value={student.id}/>
-          <label className="field"><span>Temporary password</span><input name="temporaryPassword" type="password" minLength={8} required/></label>
+          <PasswordInput name="temporaryPassword" label="Temporary password" minLength={8} autoComplete="new-password" required/>
           <button className="button button-dark button-full"><KeyRound size={17}/>Reset password</button>
         </form>
       </aside>
