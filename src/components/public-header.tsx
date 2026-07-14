@@ -29,17 +29,29 @@ export function PublicHeader() {
       setActiveSection(current?.id ?? sections[0].id);
     };
 
+    let scrollFrame: number | null = null;
+    const updateOnScroll = () => {
+      if (scrollFrame !== null) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        updateFromPosition();
+        scrollFrame = null;
+      });
+    };
+
     const observer = new IntersectionObserver(updateFromPosition, {
       rootMargin: "-92px 0px -55% 0px",
       threshold: [0, 0.15, 0.4],
     });
     sections.forEach((section) => observer.observe(section));
+    window.addEventListener("scroll", updateOnScroll, { passive: true });
     window.addEventListener("hashchange", updateFromPosition);
     const frame = window.requestAnimationFrame(updateFromPosition);
 
     return () => {
       window.cancelAnimationFrame(frame);
+      if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
       observer.disconnect();
+      window.removeEventListener("scroll", updateOnScroll);
       window.removeEventListener("hashchange", updateFromPosition);
     };
   }, [pathname]);
