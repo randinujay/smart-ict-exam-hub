@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
 import { STUDENT_NAV } from "@/lib/config";
 import type { StudentProfile } from "@/lib/types";
+import { signOutAction } from "@/app/actions/auth";
 
 export function LmsShell({ children, student }: { children: React.ReactNode; student: StudentProfile }) {
   const pathname = usePathname();
@@ -33,12 +34,8 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
             );
           })}
         </nav>
-        <div className="sidebar-help-card">
-          <strong>Need a hand?</strong>
-          <p>Message Smart ICT support directly through WhatsApp.</p>
-          <Link href="/app/support">Open support</Link>
-        </div>
-        <Link href="/" className="sidebar-signout"><LogOut size={17} /> Leave LMS</Link>
+        <Link href="/app/support" className="sidebar-support-link">Support</Link>
+        <form action={signOutAction}><button className="sidebar-signout"><LogOut size={17} />Sign out</button></form>
       </aside>
       {open && <button className="workspace-overlay" aria-label="Close navigation" onClick={() => setOpen(false)} />}
       <div className="workspace-main">
@@ -49,11 +46,9 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
             <strong>Smart ICT LMS</strong>
           </div>
           <div className="workspace-user-actions">
-            <button className="icon-button" aria-label="Notifications"><Bell size={19} /></button>
             <Link href="/app/profile" className="workspace-profile-chip">
               <span className="workspace-avatar">{initials}</span>
               <span className="workspace-profile-copy"><strong>{student.firstName}</strong><small>{student.accountStatus}</small></span>
-              <ChevronDown size={16} />
             </Link>
           </div>
         </header>

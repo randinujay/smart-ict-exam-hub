@@ -58,6 +58,7 @@ export interface Recording {
   publishedAt: string;
   access: ContentAccess;
   duration?: string;
+  isPublished?: boolean;
 }
 
 export interface ResourceItem {
@@ -73,6 +74,7 @@ export interface ResourceItem {
   programIds: string[];
   batchIds: string[];
   isUnlocked?: boolean;
+  isPublished?: boolean;
 }
 
 export interface ModuleItem {

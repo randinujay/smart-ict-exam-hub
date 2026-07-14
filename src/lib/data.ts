@@ -214,6 +214,20 @@ export const getSiteSettings = cache(async (): Promise<Record<string, string>> =
   return Object.fromEntries(data.map((row) => [row.content_key, row.content_value ?? ""]));
 });
 
+export const getPublicSiteContent = cache(async (): Promise<Record<string, string>> => {
+  if (!isSupabaseConfigured()) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("site_content")
+    .select("content_key,content_value")
+    .eq("is_public", true);
+  if (error || !data) {
+    console.error("public site content query failed", error);
+    return {};
+  }
+  return Object.fromEntries(data.map((row) => [row.content_key, row.content_value ?? ""]));
+});
+
 
 export interface ManualReviewData {
   result: ResultRecord;

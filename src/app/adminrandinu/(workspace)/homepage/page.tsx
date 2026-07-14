@@ -1,5 +1,51 @@
-import { PanelsTopLeft, Save } from "lucide-react";
-import { updateSiteSettingsAction } from "@/app/actions/admin";
+import { Save } from "lucide-react";
+import { updateHomepageContentAction, updateSiteSettingsAction } from "@/app/actions/admin";
+import { PublicImageField } from "@/components/admin/public-image-field";
 import { PageHeading } from "@/components/page-heading";
-import { getSiteSettings } from "@/lib/data";
-export default async function AdminHomepagePage(){const settings=await getSiteSettings();return <div><PageHeading eyebrow="PUBLIC WEBSITE" title="Homepage Content" description="Manage links and operational details without editing the website code."/><section className="admin-card"><div className="card-heading-row"><div><span className="section-kicker">PUBLIC LINKS & DETAILS</span><h2>Contact, social and payment information</h2></div><PanelsTopLeft size={25}/></div><form action={updateSiteSettingsAction} className="admin-form-grid"><label className="field"><span>WhatsApp Channel URL</span><input name="whatsapp_channel_url" type="url" defaultValue={settings.whatsapp_channel_url||""}/></label><label className="field"><span>Facebook Page URL</span><input name="facebook_url" type="url" defaultValue={settings.facebook_url||""}/></label><label className="field"><span>YouTube Channel URL</span><input name="youtube_url" type="url" defaultValue={settings.youtube_url||""}/></label><div className="form-divider full"><span>Student payment page</span></div><label className="field"><span>Bank name</span><input name="bank_name" defaultValue={settings.bank_name||""}/></label><label className="field"><span>Bank branch</span><input name="bank_branch" defaultValue={settings.bank_branch||""}/></label><label className="field"><span>Account holder name</span><input name="bank_account_name" defaultValue={settings.bank_account_name||""}/></label><label className="field"><span>Account number</span><input name="bank_account_number" defaultValue={settings.bank_account_number||""}/></label><button className="button button-primary"><Save size={17}/>Save website settings</button></form></section><section className="admin-card content-management-note"><h2>Content editing roadmap</h2><p>Programs and testimonials are already managed dynamically. Hero text, About content, FAQs and social links are prepared to move fully into the <code>site_content</code> table when you want non-code editing for every public section.</p></section></div>}
+import { getPublicSiteContent, getSiteSettings } from "@/lib/data";
+import { PUBLIC_CONTENT_DEFAULTS, type PublicContentKey } from "@/lib/site-content";
+
+const groups: Array<{ title: string; fields: Array<{ key: PublicContentKey; label: string; area?: boolean }> }> = [
+  { title: "Hero", fields: [{ key: "hero_eyebrow", label: "Small heading" }, { key: "hero_title", label: "Main heading" }, { key: "hero_highlight", label: "Highlighted heading" }, { key: "hero_description", label: "Introduction", area: true }] },
+  { title: "Programs", fields: [{ key: "programs_kicker", label: "Small heading" }, { key: "programs_title", label: "Heading" }, { key: "programs_description", label: "Introduction", area: true }] },
+  { title: "About", fields: [{ key: "about_kicker", label: "Small heading" }, { key: "about_title", label: "Heading" }, { key: "about_lead", label: "Lead paragraph", area: true }, { key: "about_body", label: "Body paragraph", area: true }] },
+  { title: "Why Smart ICT", fields: [{ key: "why_kicker", label: "Small heading" }, { key: "why_title", label: "Heading" }, { key: "why_description", label: "Introduction", area: true }] },
+  { title: "LMS", fields: [{ key: "lms_kicker", label: "Small heading" }, { key: "lms_title", label: "Heading" }, { key: "lms_description", label: "Introduction", area: true }] },
+  { title: "Reviews", fields: [{ key: "reviews_kicker", label: "Small heading" }, { key: "reviews_title", label: "Heading" }, { key: "reviews_description", label: "Introduction", area: true }] },
+  { title: "FAQ", fields: [{ key: "faq_kicker", label: "Small heading" }, { key: "faq_title", label: "Heading" }, { key: "faq_description", label: "Introduction", area: true }] },
+  { title: "Contact", fields: [{ key: "contact_kicker", label: "Small heading" }, { key: "contact_title", label: "Heading" }] },
+];
+
+export default async function AdminHomepagePage() {
+  const [settings, publicContent] = await Promise.all([getSiteSettings(), getPublicSiteContent()]);
+  const content = { ...PUBLIC_CONTENT_DEFAULTS, ...publicContent };
+  return <div>
+    <PageHeading eyebrow="PUBLIC WEBSITE" title="Website editor" description="Edit the public homepage without touching code." />
+    <form action={updateHomepageContentAction} className="site-editor-form">
+      <details className="admin-create-panel" open><summary>Hero</summary><div className="admin-form-grid">
+        {groups[0].fields.map((field) => <label key={field.key} className={`field ${field.area ? "full" : ""}`}><span>{field.label}</span>{field.area ? <textarea name={field.key} rows={4} defaultValue={content[field.key]} /> : <input name={field.key} defaultValue={content[field.key]} />}</label>)}
+        <PublicImageField name="hero_image_url" label="Teacher portrait" defaultValue={content.hero_image_url} />
+      </div></details>
+      <details className="admin-create-panel"><summary>About</summary><div className="admin-form-grid">
+        {groups[2].fields.map((field) => <label key={field.key} className={`field ${field.area ? "full" : ""}`}><span>{field.label}</span>{field.area ? <textarea name={field.key} rows={4} defaultValue={content[field.key]} /> : <input name={field.key} defaultValue={content[field.key]} />}</label>)}
+        <PublicImageField name="about_image_url" label="About image" defaultValue={content.about_image_url} />
+      </div></details>
+      {groups.filter((_, index) => ![0, 2].includes(index)).map((group) => <details key={group.title} className="admin-create-panel"><summary>{group.title}</summary><div className="admin-form-grid">{group.fields.map((field) => <label key={field.key} className={`field ${field.area ? "full" : ""}`}><span>{field.label}</span>{field.area ? <textarea name={field.key} rows={4} defaultValue={content[field.key]} /> : <input name={field.key} defaultValue={content[field.key]} />}</label>)}</div></details>)}
+      <button className="button button-primary sticky-save-button"><Save size={17} />Publish homepage changes</button>
+    </form>
+
+    <section className="admin-card settings-section">
+      <h2>Contact and payment details</h2>
+      <form action={updateSiteSettingsAction} className="admin-form-grid">
+        <label className="field"><span>WhatsApp channel URL</span><input name="whatsapp_channel_url" type="url" defaultValue={settings.whatsapp_channel_url || ""} /></label>
+        <label className="field"><span>Facebook URL</span><input name="facebook_url" type="url" defaultValue={settings.facebook_url || ""} /></label>
+        <label className="field"><span>YouTube URL</span><input name="youtube_url" type="url" defaultValue={settings.youtube_url || ""} /></label>
+        <label className="field"><span>Bank</span><input name="bank_name" defaultValue={settings.bank_name || ""} /></label>
+        <label className="field"><span>Branch</span><input name="bank_branch" defaultValue={settings.bank_branch || ""} /></label>
+        <label className="field"><span>Account holder</span><input name="bank_account_name" defaultValue={settings.bank_account_name || ""} /></label>
+        <label className="field"><span>Account number</span><input name="bank_account_number" defaultValue={settings.bank_account_number || ""} /></label>
+        <button className="button button-primary"><Save size={17} />Save details</button>
+      </form>
+    </section>
+  </div>;
+}

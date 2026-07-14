@@ -1,7 +1,39 @@
-import { FileText, UploadCloud } from "lucide-react";
+import { Pencil, Save, Trash2, UploadCloud } from "lucide-react";
+import { deleteResourceAction, updateResourceAction } from "@/app/actions/admin";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ResourceUploadForm } from "@/components/admin/resource-upload-form";
 import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/status-badge";
 import { getAdminData } from "@/lib/data";
 import { isSupabaseConfigured } from "@/lib/env";
-export default async function AdminResourcesPage(){const data=await getAdminData();return <div><PageHeading eyebrow="DOWNLOAD LIBRARY" title="Resources" description="Upload private files, attach them to monthly modules and choose whether access is free or paid."/><details className="admin-create-panel" open><summary><UploadCloud size={17}/>Upload a resource</summary><ResourceUploadForm programs={data.programs} modules={data.modules} demoMode={!isSupabaseConfigured()}/></details><section className="admin-card"><div className="card-heading-row"><div><span className="section-kicker">RESOURCE LIBRARY</span><h2>Published files</h2></div><span>{data.resources.length} resources</span></div><div className="responsive-table"><table><thead><tr><th>Resource</th><th>Type</th><th>Module</th><th>Audience</th><th>Access</th><th>Published</th></tr></thead><tbody>{data.resources.map((resource)=><tr key={resource.id}><td><div className="table-title-cell"><span><FileText/></span><div><strong>{resource.title}</strong><small>{resource.fileName}</small></div></div></td><td>{resource.fileType}</td><td>{data.modules.find((module)=>module.id===resource.moduleId)?.title||"Independent"}</td><td>{resource.programIds.length?resource.programIds.map((id)=>data.programs.find((program)=>program.id===id)?.shortName).filter(Boolean).join(", "):"All registered users"}</td><td><StatusBadge tone={resource.access==="free"?"success":"brand"}>{resource.access}</StatusBadge></td><td>{new Date(resource.publishedAt).toLocaleDateString("en-LK")}</td></tr>)}</tbody></table></div></section></div>}
+
+export default async function AdminResourcesPage() {
+  const data = await getAdminData();
+  return <div>
+    <PageHeading eyebrow="DOWNLOAD LIBRARY" title="Resources" />
+    <details className="admin-create-panel"><summary><UploadCloud size={17} />Upload resource</summary><ResourceUploadForm programs={data.programs} modules={data.modules} demoMode={!isSupabaseConfigured()} /></details>
+    <section className="admin-card admin-table-card"><div className="responsive-table"><table><thead><tr><th>Resource</th><th>Module</th><th>Audience</th><th>Access</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+      {data.resources.map((resource) => <tr key={resource.id}>
+        <td><div className="table-title-cell"><strong>{resource.title}</strong><span>{resource.fileName} / {resource.fileType}</span></div></td>
+        <td>{data.modules.find((module) => module.id === resource.moduleId)?.title || "Independent"}</td>
+        <td>{resource.programIds.length ? resource.programIds.map((id) => data.programs.find((program) => program.id === id)?.shortName).filter(Boolean).join(", ") : "All students"}</td>
+        <td><StatusBadge tone={resource.access === "free" ? "success" : "brand"}>{resource.access}</StatusBadge></td>
+        <td><StatusBadge tone={resource.isPublished === false ? "neutral" : "success"}>{resource.isPublished === false ? "Hidden" : "Published"}</StatusBadge></td>
+        <td><div className="table-actions">
+          <details className="inline-editor"><summary><Pencil size={15} />Edit</summary><form action={updateResourceAction} className="admin-form-grid compact-form">
+            <input type="hidden" name="resourceId" value={resource.id} />
+            <label className="field"><span>Title</span><input name="title" defaultValue={resource.title} required /></label>
+            <label className="field"><span>File type</span><select name="fileType" defaultValue={resource.fileType}><option>PDF</option><option>Tute</option><option>Worksheet</option><option>Past Paper</option><option>Image</option><option>Other</option></select></label>
+            <label className="field full"><span>Description</span><textarea name="description" rows={3} defaultValue={resource.description} /></label>
+            <label className="field"><span>Module</span><select name="moduleId" defaultValue={resource.moduleId ?? ""}><option value="">Independent</option>{data.modules.map((module) => <option key={module.id} value={module.id}>{module.title}</option>)}</select></label>
+            <label className="field"><span>Access</span><select name="access" defaultValue={resource.access}><option value="free">Free</option><option value="paid">Paid</option></select></label>
+            <label className="field full"><span>Programs</span><select name="programIds" multiple size={Math.min(Math.max(data.programs.length, 2), 5)} defaultValue={resource.programIds}>{data.programs.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select></label>
+            <label className="toggle-field full"><input name="isPublished" type="checkbox" defaultChecked={resource.isPublished ?? true} />Published</label>
+            <button className="button button-primary"><Save size={15} />Save</button>
+          </form></details>
+          <form action={deleteResourceAction}><input type="hidden" name="resourceId" value={resource.id} /><ConfirmSubmitButton className="icon-danger-button" aria-label={`Delete ${resource.title}`} message={`Delete ${resource.title} and its uploaded file?`}><Trash2 size={16} /></ConfirmSubmitButton></form>
+        </div></td>
+      </tr>)}
+    </tbody></table></div></section>
+  </div>;
+}

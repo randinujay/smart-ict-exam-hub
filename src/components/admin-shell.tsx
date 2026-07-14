@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
 import { ADMIN_NAV } from "@/lib/config";
+import { signOutAction } from "@/app/actions/auth";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,7 +35,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="admin-sidebar-links">
           <Link href="/" target="_blank">View public website <ArrowUpRight size={15} /></Link>
-          <Link href="/">Sign out <LogOut size={15} /></Link>
+          <form action={signOutAction}><button>Sign out <LogOut size={15} /></button></form>
         </div>
       </aside>
       {open && <button className="workspace-overlay" aria-label="Close navigation" onClick={() => setOpen(false)} />}

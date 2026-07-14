@@ -48,8 +48,8 @@ export function ResourceUploadForm({ programs, modules, demoMode }: { programs: 
     <label className="field full"><span>Description</span><textarea name="description" rows={3} /></label>
     <label className="field"><span>Monthly module</span><select name="moduleId" defaultValue=""><option value="">Independent resource</option>{modules.map((module)=><option key={module.id} value={module.id}>{module.title}</option>)}</select></label>
     <label className="field"><span>Access</span><select name="access" defaultValue="paid"><option value="free">Free</option><option value="paid">Paid / module access</option></select></label>
-    <label className="field full"><span>Programs (Ctrl/Cmd to select multiple)</span><select name="programIds" multiple size={Math.min(programs.length,4)}>{programs.map((program)=><option key={program.id} value={program.id}>{program.name}</option>)}</select></label>
-    <label className="field full file-field"><span>Choose file</span><input name="file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.zip" required /><small>Private Supabase Storage bucket · maximum 25 MB</small></label>
+    <fieldset className="field full choice-fieldset"><legend>Programs</legend><div className="builder-checkboxes">{programs.map((program)=><label key={program.id}><input name="programIds" type="checkbox" value={program.id}/>{program.name}</label>)}</div></fieldset>
+    <label className="field full file-field"><span>Choose file</span><input name="file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.zip" required /></label>
     {message&&<p className="form-message full">{message}</p>}
     <button className="button button-primary" disabled={busy}>{busy?<LoaderCircle className="spin" size={18}/>:<UploadCloud size={18}/>}Upload resource</button>
   </form>;

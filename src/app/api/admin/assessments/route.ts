@@ -1,66 +1,56 @@
 import { NextResponse } from "next/server";
 import { requireApiAdmin } from "@/lib/server/api-auth";
 
-export async function POST(request: Request) {
+type Payload = Record<string, unknown> & { questions?: Array<Record<string, unknown>> };
+
+function validate(payload: Payload) {
+  if (!String(payload.title ?? "").trim()) return "An assessment title is required.";
+  const hasAudience = [payload.programIds, payload.batchIds, payload.studentIds].some((items) => Array.isArray(items) && items.length);
+  if (payload.access !== "free" && !hasAudience) return "Paid assessments need an audience.";
+  if (payload.access !== "free" && !payload.moduleId) return "Paid assessments must belong to a monthly module.";
+  if (payload.timing === "strict" && (!payload.startsAt || !payload.endsAt || Date.parse(String(payload.endsAt)) <= Date.parse(String(payload.startsAt)))) return "Set a valid start time and a later end time.";
+  if (payload.timing === "flexible" && payload.delivery === "online" && (!Number.isInteger(payload.durationMinutes) || Number(payload.durationMinutes) < 1 || Number(payload.durationMinutes) > 360)) return "Duration must be between 1 and 360 minutes.";
+  if (!Number.isInteger(payload.maxAttempts) || Number(payload.maxAttempts) < 1 || Number(payload.maxAttempts) > 10) return "Attempt limit must be between 1 and 10.";
+  if (payload.delivery === "online" && (!Array.isArray(payload.questions) || !payload.questions.length)) return "Online assessments need at least one question.";
+  const allowedTypes = new Set(["single_choice", "multiple_choice", "true_false", "short_answer", "structured"]);
+  for (const [index, question] of (payload.questions ?? []).entries()) {
+    if (!allowedTypes.has(String(question.type)) || !String(question.prompt ?? "").trim()) return `Question ${index + 1} needs a type and prompt.`;
+    const marks = Number(question.marks);
+    if (!Number.isFinite(marks) || marks <= 0) return `Question ${index + 1} has invalid marks.`;
+    if (question.imageUrl) {
+      try {
+        const imageUrl = new URL(String(question.imageUrl));
+        if (!["https:", "http:"].includes(imageUrl.protocol)) throw new Error();
+      } catch { return `Question ${index + 1} has an invalid image URL.`; }
+    }
+    if (["single_choice", "multiple_choice", "true_false"].includes(String(question.type))) {
+      const options = Array.isArray(question.options) ? question.options as Array<{ text?: unknown }> : [];
+      if (options.length < 2 || options.some((option) => !String(option.text ?? "").trim())) return `Question ${index + 1} needs completed options.`;
+      const answers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
+      if (!answers.length || answers.some((answer) => !String(answer ?? "").trim())) return `Question ${index + 1} needs a correct answer.`;
+    }
+    if (question.type === "short_answer" && !String(question.correctAnswer ?? "").trim()) return `Question ${index + 1} needs an expected answer.`;
+  }
+  return null;
+}
+
+async function save(request: Request, mode: "create" | "update") {
   const auth = await requireApiAdmin();
   if ("error" in auth) return auth.error;
-
   try {
-    const payload = await request.json();
-    if (!String(payload.title ?? "").trim()) return NextResponse.json({ error: "An assessment title is required." }, { status: 400 });
-    const hasAudience = [payload.programIds, payload.batchIds, payload.studentIds].some((items) => Array.isArray(items) && items.length);
-    if (payload.access !== "free" && !hasAudience) {
-      return NextResponse.json({ error: "Paid assessments need a program, batch or individual student audience." }, { status: 400 });
-    }
-    if (payload.access !== "free" && !payload.moduleId) {
-      return NextResponse.json({ error: "Paid assessments must belong to a monthly module." }, { status: 400 });
-    }
-    if (payload.timing === "strict" && (!payload.startsAt || !payload.endsAt || Date.parse(payload.endsAt) <= Date.parse(payload.startsAt))) {
-      return NextResponse.json({ error: "Strict assessments need a valid start time and a later end time." }, { status: 400 });
-    }
-    if (payload.timing === "flexible" && payload.delivery === "online" && (!Number.isInteger(payload.durationMinutes) || payload.durationMinutes < 1 || payload.durationMinutes > 360)) {
-      return NextResponse.json({ error: "Flexible assessments need a duration from 1 to 360 minutes." }, { status: 400 });
-    }
-    if (!Number.isInteger(payload.maxAttempts) || payload.maxAttempts < 1 || payload.maxAttempts > 10) {
-      return NextResponse.json({ error: "Attempt limit must be between 1 and 10." }, { status: 400 });
-    }
-    if (payload.delivery === "online" && (!Array.isArray(payload.questions) || !payload.questions.length)) {
-      return NextResponse.json({ error: "Online assessments need at least one question." }, { status: 400 });
-    }
-    if (Array.isArray(payload.questions)) {
-      const allowedTypes = new Set(["single_choice", "multiple_choice", "true_false", "short_answer", "structured"]);
-      for (const [index, question] of payload.questions.entries()) {
-        if (!allowedTypes.has(question.type) || !String(question.prompt ?? "").trim()) {
-          return NextResponse.json({ error: `Question ${index + 1} needs a valid type and prompt.` }, { status: 400 });
-        }
-        const marks = Number(question.marks);
-        if (!Number.isFinite(marks) || marks <= 0) return NextResponse.json({ error: `Question ${index + 1} has invalid marks.` }, { status: 400 });
-        if (question.imageUrl) {
-          try {
-            const imageUrl = new URL(String(question.imageUrl));
-            if (imageUrl.protocol !== "https:" && imageUrl.protocol !== "http:") throw new Error();
-          } catch {
-            return NextResponse.json({ error: `Question ${index + 1} has an invalid image URL.` }, { status: 400 });
-          }
-        }
-        if (["single_choice", "multiple_choice", "true_false"].includes(question.type)) {
-          if (!Array.isArray(question.options) || question.options.length < 2 || question.options.some((option: { text?: unknown }) => !String(option.text ?? "").trim())) {
-            return NextResponse.json({ error: `Question ${index + 1} needs at least two completed options.` }, { status: 400 });
-          }
-          const answers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
-          if (!answers.length || answers.some((answer: unknown) => !String(answer ?? "").trim())) {
-            return NextResponse.json({ error: `Question ${index + 1} needs a correct answer.` }, { status: 400 });
-          }
-        }
-        if (question.type === "short_answer" && !String(question.correctAnswer ?? "").trim()) {
-          return NextResponse.json({ error: `Question ${index + 1} needs an expected answer.` }, { status: 400 });
-        }
-      }
-    }
-    const { data, error } = await auth.supabase.rpc("create_assessment_bundle", { p_payload: payload });
+    const payload = await request.json() as Payload;
+    const validationError = validate(payload);
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+    if (mode === "update" && !/^[0-9a-f-]{36}$/i.test(String(payload.assessmentId ?? ""))) return NextResponse.json({ error: "Invalid assessment." }, { status: 400 });
+    const { data, error } = await auth.supabase.rpc(mode === "create" ? "create_assessment_bundle" : "update_assessment_bundle", mode === "create"
+      ? { p_payload: payload }
+      : { p_assessment_id: payload.assessmentId, p_payload: payload });
     if (error) throw error;
-    return NextResponse.json({ id: data }, { status: 201 });
+    return NextResponse.json({ id: data }, { status: mode === "create" ? 201 : 200 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not save assessment." }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) { return save(request, "create"); }
+export async function PUT(request: Request) { return save(request, "update"); }

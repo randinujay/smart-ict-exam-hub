@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "ghhwhwaaizvjblczyfrc.supabase.co", pathname: "/storage/v1/object/public/site-images/**" }],
+  },
   turbopack: {
     root: process.cwd(),
   },

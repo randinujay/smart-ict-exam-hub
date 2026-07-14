@@ -242,3 +242,241 @@ export async function setStudentAccessOverrideAction(formData: FormData) {
   revalidatePath(`/adminrandinu/students/${studentId}`);
   revalidatePath("/app");
 }
+
+export async function updateProgramAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const programId = value(formData, "programId");
+  const mediums = formData.getAll("mediums").map(String);
+  const examYear = value(formData, "examYear") ? Number(value(formData, "examYear")) : null;
+  if (!mediums.length || mediums.some((item) => !["Sinhala", "English"].includes(item))) throw new Error("Select at least one medium.");
+  const coverImage = value(formData, "coverImage") || "/ol-theory-poster.jpg";
+  const { error } = await supabase.from("programs").update({
+    name: value(formData, "name"), short_name: value(formData, "shortName"),
+    slug: value(formData, "slug").toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+    description: value(formData, "description"),
+    academic_level: requireChoice(value(formData, "academicLevel"), ["O/L", "A/L", "Other"], "academic level"),
+    exam_year: examYear, mediums, cover_image_url: requireWebUrl(coverImage, "cover image", true),
+    is_public: bool(formData, "isPublic"), registration_open: bool(formData, "registrationOpen"), is_active: bool(formData, "isActive"),
+  }).eq("id", programId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/");
+}
+
+export async function deleteProgramAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("programs").delete().eq("id", value(formData, "programId"));
+  if (error) throw new Error(`This program still has linked records. Remove its modules, payments and assignments first. ${error.message}`);
+  revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/");
+}
+
+export async function updateBatchAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("batches").update({
+    program_id: value(formData, "programId"), name: value(formData, "name"),
+    description: value(formData, "description") || null, is_active: bool(formData, "isActive"),
+  }).eq("id", value(formData, "batchId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/batches"); revalidatePath("/adminrandinu/students");
+}
+
+export async function deleteBatchAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("batches").delete().eq("id", value(formData, "batchId"));
+  if (error) throw new Error(`This batch is still in use. Remove its assignments and modules first. ${error.message}`);
+  revalidatePath("/adminrandinu/batches");
+}
+
+export async function updateModuleAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const month = Number(value(formData, "month")); const year = Number(value(formData, "year"));
+  if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) throw new Error("Select a valid month and year.");
+  const { error } = await supabase.from("modules").update({
+    program_id: value(formData, "programId"), batch_id: value(formData, "batchId") || null,
+    title: value(formData, "title"), month, year,
+    access_type: requireChoice(value(formData, "access"), ["free", "paid"], "access type"),
+    status: requireChoice(value(formData, "status"), ["draft", "published", "upcoming", "archived"], "module status"),
+    opens_at: colomboLocalToIso(value(formData, "opensAt")), closes_at: colomboLocalToIso(value(formData, "closesAt")),
+  }).eq("id", value(formData, "moduleId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/modules"); revalidatePath("/app/modules");
+}
+
+export async function deleteModuleAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const moduleId = value(formData, "moduleId");
+  const { count } = await supabase.from("assessments").select("id", { count: "exact", head: true }).eq("module_id", moduleId);
+  if (count) throw new Error("Move or delete the assessments in this module before deleting it.");
+  const { error } = await supabase.from("modules").delete().eq("id", moduleId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/modules"); revalidatePath("/app/modules");
+}
+
+export async function updateRecordingAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("recordings").update({
+    module_id: value(formData, "moduleId"), title: value(formData, "title"),
+    description: value(formData, "description") || null,
+    video_url: requireWebUrl(value(formData, "videoUrl"), "recording"), duration_label: value(formData, "duration") || null,
+    access_type: requireChoice(value(formData, "access"), ["free", "paid"], "access type"), is_published: bool(formData, "isPublished"),
+  }).eq("id", value(formData, "recordingId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/recordings"); revalidatePath("/app/modules");
+}
+
+export async function deleteRecordingAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("recordings").delete().eq("id", value(formData, "recordingId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/recordings"); revalidatePath("/app/modules");
+}
+
+export async function updateResourceAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const resourceId = value(formData, "resourceId");
+  const access = requireChoice(value(formData, "access"), ["free", "paid"], "access type");
+  const moduleId = value(formData, "moduleId") || null;
+  if (access === "paid" && !moduleId) throw new Error("Paid resources must belong to a module.");
+  const { error } = await supabase.from("resources").update({
+    module_id: moduleId, title: value(formData, "title"), description: value(formData, "description") || null,
+    file_type: value(formData, "fileType") || "Other", access_type: access, is_published: bool(formData, "isPublished"),
+  }).eq("id", resourceId);
+  if (error) throw new Error(error.message);
+  const { error: audienceDeleteError } = await supabase.from("content_audiences").delete().eq("content_type", "resource").eq("content_id", resourceId);
+  if (audienceDeleteError) throw new Error(audienceDeleteError.message);
+  const audiences = formData.getAll("programIds").map(String).filter(Boolean).map((programId) => ({ content_type: "resource", content_id: resourceId, program_id: programId }));
+  if (audiences.length) {
+    const { error: audienceError } = await supabase.from("content_audiences").insert(audiences);
+    if (audienceError) throw new Error(audienceError.message);
+  }
+  revalidatePath("/adminrandinu/resources"); revalidatePath("/app/resources");
+}
+
+export async function deleteResourceAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const resourceId = value(formData, "resourceId");
+  const { data: resource, error: readError } = await supabase.from("resources").select("storage_path").eq("id", resourceId).single();
+  if (readError) throw new Error(readError.message);
+  const { error } = await supabase.from("resources").delete().eq("id", resourceId);
+  if (error) throw new Error(error.message);
+  if (resource?.storage_path) await supabase.storage.from("resources").remove([resource.storage_path]);
+  revalidatePath("/adminrandinu/resources"); revalidatePath("/app/resources");
+}
+
+export async function updatePaymentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const billingMonth = value(formData, "billingMonth"); const amount = Number(value(formData, "amount") || 0);
+  const status = requireChoice(value(formData, "status"), ["paid", "unpaid", "waived"], "payment status");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(billingMonth) || !Number.isFinite(amount) || amount < 0) throw new Error("Enter a valid month and amount.");
+  const { error } = await supabase.from("payments").update({
+    program_id: value(formData, "programId"), batch_id: value(formData, "batchId") || null,
+    billing_month: `${billingMonth}-01`, amount, status, paid_at: status === "paid" ? new Date().toISOString() : null,
+    notes: value(formData, "notes") || null,
+  }).eq("id", value(formData, "paymentId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/payments"); revalidatePath("/app/payments");
+}
+
+export async function deletePaymentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("payments").delete().eq("id", value(formData, "paymentId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/payments"); revalidatePath("/app/payments");
+}
+
+export async function updateTestimonialAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("testimonials").update({
+    student_name: value(formData, "studentName"), program_name: value(formData, "programName"),
+    quote: value(formData, "quote"), result_label: value(formData, "resultLabel") || null,
+    is_published: bool(formData, "isPublished"),
+  }).eq("id", value(formData, "testimonialId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/testimonials"); revalidatePath("/");
+}
+
+export async function deleteTestimonialAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("testimonials").delete().eq("id", value(formData, "testimonialId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/testimonials"); revalidatePath("/");
+}
+
+export async function updateHomepageContentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const keys = [
+    "hero_eyebrow", "hero_title", "hero_highlight", "hero_description", "hero_image_url",
+    "programs_kicker", "programs_title", "programs_description",
+    "about_kicker", "about_title", "about_lead", "about_body", "about_image_url",
+    "why_kicker", "why_title", "why_description",
+    "lms_kicker", "lms_title", "lms_description",
+    "reviews_kicker", "reviews_title", "reviews_description",
+    "faq_kicker", "faq_title", "faq_description",
+    "contact_kicker", "contact_title",
+  ];
+  const entries = keys.map((key) => {
+    const raw = value(formData, key);
+    return { content_key: key, content_value: key.endsWith("_image_url") && raw ? requireWebUrl(raw, key.replaceAll("_", " "), true) : raw, content_type: key.endsWith("_image_url") ? "image" : "text", is_public: true };
+  });
+  const { error } = await supabase.from("site_content").upsert(entries, { onConflict: "content_key" });
+  if (error) throw new Error(error.message);
+  revalidatePath("/"); revalidatePath("/adminrandinu/homepage");
+}
+
+export async function deleteSupportRequestAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("support_requests").delete().eq("id", value(formData, "requestId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/support");
+}
+
+export async function updateResultAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const obtainedMarks = Number(value(formData, "obtainedMarks")); const totalMarks = Number(value(formData, "totalMarks"));
+  if (!Number.isFinite(obtainedMarks) || !Number.isFinite(totalMarks) || totalMarks <= 0 || obtainedMarks < 0 || obtainedMarks > totalMarks) throw new Error("Enter valid marks.");
+  const admin = createAdminClient();
+  const { error } = await admin.from("results").update({
+    obtained_marks: obtainedMarks, total_marks: totalMarks, feedback: value(formData, "feedback") || null,
+    status: requireChoice(value(formData, "status"), ["pending", "published"], "result status"),
+    published_at: value(formData, "status") === "published" ? new Date().toISOString() : null,
+  }).eq("id", value(formData, "resultId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/results"); revalidatePath("/app/results");
+  redirect("/adminrandinu/results");
+}
+
+export async function deleteResultAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const admin = createAdminClient();
+  const { error } = await admin.from("results").delete().eq("id", value(formData, "resultId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/results"); revalidatePath("/app/results");
+}
+
+export async function deleteAssessmentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("assessments").delete().eq("id", value(formData, "assessmentId"));
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/assessments"); revalidatePath("/adminrandinu/results"); revalidatePath("/app/assessments");
+}
+
+export async function unassignStudentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const query = supabase.from("enrollments").delete().eq("student_id", value(formData, "studentId")).eq("program_id", value(formData, "programId"));
+  const batchId = value(formData, "batchId");
+  const { error } = batchId ? await query.eq("batch_id", batchId) : await query;
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/students"); revalidatePath(`/adminrandinu/students/${value(formData, "studentId")}`);
+}
+
+export async function deleteStudentAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const studentId = value(formData, "studentId");
+  const { data: student, error: studentError } = await supabase.from("profiles").select("id").eq("id", studentId).eq("role", "student").single();
+  if (studentError || !student) throw new Error("Student account not found.");
+  await supabase.from("support_requests").delete().eq("student_id", studentId);
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(studentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/students"); revalidatePath("/adminrandinu/results");
+  redirect("/adminrandinu/students");
+}
