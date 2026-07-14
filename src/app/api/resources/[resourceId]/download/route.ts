@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { requireApiUser } from "@/lib/server/api-auth";
 
 export async function GET(
@@ -28,8 +27,7 @@ export async function GET(
     return NextResponse.json({ error: "Resource not found." }, { status: 404 });
   }
 
-  const admin = createAdminClient();
-  const { data, error } = await admin.storage
+  const { data, error } = await auth.supabase.storage
     .from("resources")
     .createSignedUrl(resource.storage_path, 60, { download: resource.file_name });
 

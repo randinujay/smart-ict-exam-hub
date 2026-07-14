@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidSriLankanMobile, normalizeSriLankanPhone, studentEmailAlias } from "@/lib/auth";
+import { isValidSriLankanMobile, normalizeSriLankanPhone } from "@/lib/auth";
+import { callUserAdminFunction } from "@/lib/server/user-admin";
 
 async function requireAdmin() {
   if (isDemoMode()) return null;
@@ -195,15 +195,15 @@ export async function updateStudentDetailsAction(formData: FormData) {
     date_of_birth:value(formData,"dateOfBirth"),nic:nic||null,
     contact_number:normalized,address:value(formData,"address"),school:value(formData,"school"),medium:requireChoice(value(formData,"medium"),["Sinhala","English"],"medium"),
   };
-  const {data:existing,error:existingError}=await supabase.from("profiles").select("contact_number").eq("id",studentId).eq("role","student").single();
+  const {data:existing,error:existingError}=await supabase.from("profiles").select("contact_number,first_name,last_name").eq("id",studentId).eq("role","student").single();
   if(existingError||!existing) throw new Error("Student account not found.");
-  const admin=createAdminClient();
-  const {error:authError}=await admin.auth.admin.updateUserById(studentId,{email:studentEmailAlias(normalized),email_confirm:true,user_metadata:{first_name:updates.first_name,last_name:updates.last_name,contact_number:normalized}});
-  if(authError) throw new Error(`Login phone update failed: ${authError.message}`);
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session) redirect("/adminrandinu");
+  await callUserAdminFunction("update_student_login",{studentId,phone:normalized,firstName:updates.first_name,lastName:updates.last_name},session.access_token);
   const {error}=await supabase.from("profiles").update(updates).eq("id",studentId).eq("role","student");
   if(error){
     if(existing.contact_number){
-      await admin.auth.admin.updateUserById(studentId,{email:studentEmailAlias(existing.contact_number),email_confirm:true});
+      await callUserAdminFunction("update_student_login",{studentId,phone:existing.contact_number,firstName:existing.first_name,lastName:existing.last_name},session.access_token);
     }
     throw new Error(error.message);
   }
@@ -217,9 +217,9 @@ export async function resetStudentPasswordAction(formData: FormData) {
   if(temporaryPassword.length<8) throw new Error("Temporary password must contain at least 8 characters.");
   const {data:student,error:studentError}=await supabase.from("profiles").select("id").eq("id",studentId).eq("role","student").single();
   if(studentError||!student) throw new Error("Student account not found.");
-  const admin=createAdminClient();
-  const {error}=await admin.auth.admin.updateUserById(studentId,{password:temporaryPassword});
-  if(error) throw new Error(error.message);
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session) redirect("/adminrandinu");
+  await callUserAdminFunction("reset_student_password",{studentId,password:temporaryPassword},session.access_token);
   revalidatePath(`/adminrandinu/students/${studentId}`);
 }
 
@@ -433,12 +433,11 @@ export async function updateResultAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
   const obtainedMarks = Number(value(formData, "obtainedMarks")); const totalMarks = Number(value(formData, "totalMarks"));
   if (!Number.isFinite(obtainedMarks) || !Number.isFinite(totalMarks) || totalMarks <= 0 || obtainedMarks < 0 || obtainedMarks > totalMarks) throw new Error("Enter valid marks.");
-  const admin = createAdminClient();
-  const { error } = await admin.from("results").update({
-    obtained_marks: obtainedMarks, total_marks: totalMarks, feedback: value(formData, "feedback") || null,
-    status: requireChoice(value(formData, "status"), ["pending", "published"], "result status"),
-    published_at: value(formData, "status") === "published" ? new Date().toISOString() : null,
-  }).eq("id", value(formData, "resultId"));
+  const { error } = await supabase.rpc("update_result_admin", {
+    p_result_id: value(formData, "resultId"), p_obtained_marks: obtainedMarks, p_total_marks: totalMarks,
+    p_feedback: value(formData, "feedback") || null,
+    p_status: requireChoice(value(formData, "status"), ["pending", "published"], "result status"),
+  });
   if (error) throw new Error(error.message);
   revalidatePath("/adminrandinu/results"); revalidatePath("/app/results");
   redirect("/adminrandinu/results");
@@ -446,8 +445,7 @@ export async function updateResultAction(formData: FormData) {
 
 export async function deleteResultAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
-  const admin = createAdminClient();
-  const { error } = await admin.from("results").delete().eq("id", value(formData, "resultId"));
+  const { error } = await supabase.rpc("delete_result_admin", { p_result_id: value(formData, "resultId") });
   if (error) throw new Error(error.message);
   revalidatePath("/adminrandinu/results"); revalidatePath("/app/results");
 }
@@ -474,9 +472,9 @@ export async function deleteStudentAction(formData: FormData) {
   const { data: student, error: studentError } = await supabase.from("profiles").select("id").eq("id", studentId).eq("role", "student").single();
   if (studentError || !student) throw new Error("Student account not found.");
   await supabase.from("support_requests").delete().eq("student_id", studentId);
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.deleteUser(studentId);
-  if (error) throw new Error(error.message);
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session) redirect("/adminrandinu");
+  await callUserAdminFunction("delete_student",{studentId},session.access_token);
   revalidatePath("/adminrandinu/students"); revalidatePath("/adminrandinu/results");
   redirect("/adminrandinu/students");
 }

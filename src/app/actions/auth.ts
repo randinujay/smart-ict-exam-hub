@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 import { isValidSriLankanMobile, normalizeSriLankanPhone, studentEmailAlias } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { callUserAdminFunction } from "@/lib/server/user-admin";
 
 function required(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -58,49 +58,31 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const normalizedPhone = normalizeSriLankanPhone(phone);
   const alias = studentEmailAlias(normalizedPhone);
   const supabase = await createClient();
-  let admin: ReturnType<typeof createAdminClient>;
+  let createdUserId = "";
   try {
-    admin = createAdminClient();
-  } catch {
-    return { ok: false, message: "Registration is temporarily unavailable. Please contact Smart ICT." };
-  }
-
-  // Phone numbers are represented as internal email aliases because students log
-  // in with phone + password. Admin creation confirms that alias immediately, so
-  // the account never depends on an email that cannot receive confirmation links.
-  const { data, error } = await admin.auth.admin.createUser({
-    email: alias,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      full_name: `${firstName} ${lastName}`,
-      contact_number: normalizedPhone,
-      date_of_birth: dateOfBirth,
-      nic: nic ? nic.toUpperCase() : null,
-      address,
-      school,
-      medium,
-      registration_source: "public_lms",
-    },
-  });
-  if (error || !data.user) {
-    const errorMessage = error?.message.toLowerCase() ?? "";
-    const duplicate = errorMessage.includes("already") || errorMessage.includes("registered") || errorMessage.includes("exists");
-    return { ok: false, message: duplicate ? "An account already exists for this mobile number." : "We could not create the account. Please try again or contact support." };
+    const created = await callUserAdminFunction<{ userId: string }>("register_student", {
+      phone: normalizedPhone,
+      password,
+      metadata: {
+        first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`,
+        date_of_birth: dateOfBirth, nic: nic ? nic.toUpperCase() : null,
+        address, school, medium,
+      },
+    });
+    createdUserId = created.userId;
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "We could not create the account. Please try again or contact support." };
   }
 
   const { error: signInError } = await supabase.auth.signInWithPassword({ email: alias, password });
   if (signInError) {
-    await admin.auth.admin.deleteUser(data.user.id);
-    return { ok: false, message: "The account could not be activated. Please try again or contact Smart ICT." };
+    return { ok: false, message: "The account could not be activated. Please contact Smart ICT." };
   }
 
   // Registration itself is the verification request. The administrator sees both
   // the pending profile and this queue item without requiring another student step.
   await supabase.from("support_requests").insert({
-    student_id: data.user.id,
+    student_id: createdUserId,
     contact_number: normalizedPhone,
     request_type: "account_verification",
     subject: "New student account verification",
