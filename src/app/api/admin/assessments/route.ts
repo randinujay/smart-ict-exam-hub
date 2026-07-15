@@ -8,7 +8,7 @@ function validate(payload: Payload) {
   const hasAudience = [payload.programIds, payload.batchIds, payload.studentIds].some((items) => Array.isArray(items) && items.length);
   if (payload.access !== "free" && !hasAudience) return "Paid assessments need an audience.";
   if (payload.access !== "free" && !payload.moduleId) return "Paid assessments must belong to a monthly module.";
-  if (payload.timing === "strict" && (!payload.startsAt || !payload.endsAt || Date.parse(String(payload.endsAt)) <= Date.parse(String(payload.startsAt)))) return "Set a valid start time and a later end time.";
+  if (payload.delivery === "online" && payload.timing === "strict" && (!payload.startsAt || !payload.endsAt || Date.parse(String(payload.endsAt)) <= Date.parse(String(payload.startsAt)))) return "Set a valid start time and a later end time.";
   if (payload.timing === "flexible" && payload.delivery === "online" && (!Number.isInteger(payload.durationMinutes) || Number(payload.durationMinutes) < 1 || Number(payload.durationMinutes) > 360)) return "Duration must be between 1 and 360 minutes.";
   if (!Number.isInteger(payload.maxAttempts) || Number(payload.maxAttempts) < 1 || Number(payload.maxAttempts) > 10) return "Attempt limit must be between 1 and 10.";
   if (payload.delivery === "online" && (!Array.isArray(payload.questions) || !payload.questions.length)) return "Online assessments need at least one question.";

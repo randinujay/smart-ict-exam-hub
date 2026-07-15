@@ -898,7 +898,7 @@ begin
     nullif(p_payload->>'moduleId','')::uuid,auth.uid(),trim(p_payload->>'title'),coalesce(p_payload->>'description',''),
     coalesce(p_payload->>'instructions',''),coalesce((p_payload->>'delivery')::public.assessment_delivery,'online'),
     coalesce((p_payload->>'timing')::public.assessment_timing,'flexible'),coalesce((p_payload->>'source')::public.assessment_source,'smart_ict'),
-    'published',nullif(p_payload->>'durationMinutes','')::integer,nullif(p_payload->>'startsAt','')::timestamptz,
+    coalesce((p_payload->>'status')::public.assessment_status,'draft'),nullif(p_payload->>'durationMinutes','')::integer,nullif(p_payload->>'startsAt','')::timestamptz,
     nullif(p_payload->>'endsAt','')::timestamptz,coalesce((p_payload->>'maxAttempts')::integer,1),
     coalesce((p_payload->>'shuffleQuestions')::boolean,false),coalesce((p_payload->>'shuffleOptions')::boolean,false),
     coalesce((p_payload->>'showAnswers')::boolean,false),coalesce((p_payload->>'showResults')::boolean,true),

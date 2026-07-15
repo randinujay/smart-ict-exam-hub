@@ -683,6 +683,7 @@ h1,h2,h3 { letter-spacing: -.035em; }
 .option-builder > div { display:grid; grid-template-columns:52px 1fr; gap:8px; }
 .option-builder button { border:1px solid #ddd; background:white; border-radius:9px; display:flex; align-items:center; justify-content:center; gap:4px; font-weight:900; }
 .option-builder button.correct { background:var(--red); color:white; border-color:var(--red); }
+.option-builder-hint { margin:0 0 9px; color:var(--muted); font-size:.75rem; }
 .option-builder input { border:1px solid #ddd; border-radius:9px; padding:11px; }
 .add-question-bottom { margin-top:8px; }
 .file-field { border:1px dashed #bbb; border-radius:12px; padding:22px; background:#fafafa; }
@@ -1197,6 +1198,76 @@ html[data-workspace-theme="dark"] .workspace-content small { color:#aaaab3; }
 html[data-workspace-theme="dark"] .workspace-content .account-notice { color:#ffd17a; background:#30230d; border-color:#6e5120; }
 html[data-workspace-theme="dark"] .workspace-content .chart-gridline { stroke:#34343a; }
 html[data-workspace-theme="dark"] .workspace-content .chart-point { fill:#17171a; }
+
+/* Workspace dark surfaces that do not use the shared card naming convention. */
+html[data-workspace-theme="dark"] .workspace-content .dashboard-stat-grid > article,
+html[data-workspace-theme="dark"] .workspace-content .result-stat-row > article,
+html[data-workspace-theme="dark"] .workspace-content .admin-stat-grid > article,
+html[data-workspace-theme="dark"] .workspace-content .builder-question,
+html[data-workspace-theme="dark"] .workspace-content .question-panel,
+html[data-workspace-theme="dark"] .workspace-content .question-navigator,
+html[data-workspace-theme="dark"] .workspace-content .answer-options button,
+html[data-workspace-theme="dark"] .workspace-content .admin-create-panel,
+html[data-workspace-theme="dark"] .workspace-content .admin-list-grid > article,
+html[data-workspace-theme="dark"] .workspace-content .recordings-admin-list > article,
+html[data-workspace-theme="dark"] .workspace-content .support-admin-list > article,
+html[data-workspace-theme="dark"] .workspace-content .admin-result-list > article,
+html[data-workspace-theme="dark"] .workspace-content .student-admin-card,
+html[data-workspace-theme="dark"] .workspace-content .module-card,
+html[data-workspace-theme="dark"] .workspace-content .recording-card,
+html[data-workspace-theme="dark"] .workspace-content .assessment-card,
+html[data-workspace-theme="dark"] .workspace-content .assessment-list > article,
+html[data-workspace-theme="dark"] .workspace-content .responsive-table {
+  color:#f5f5f5;
+  background:#17171a;
+  border-color:#303036;
+}
+html[data-workspace-theme="dark"] .workspace-content .dashboard-stat-grid > article strong,
+html[data-workspace-theme="dark"] .workspace-content .result-stat-row > article strong,
+html[data-workspace-theme="dark"] .workspace-content .admin-stat-grid > article strong { color:#f5f5f5; }
+html[data-workspace-theme="dark"] .workspace-content .dashboard-stat-grid > article small,
+html[data-workspace-theme="dark"] .workspace-content .result-stat-row > article small,
+html[data-workspace-theme="dark"] .workspace-content .admin-stat-grid > article small { color:#aaaab3; }
+html[data-workspace-theme="dark"] .workspace-content .builder-topbar { background:rgba(13,13,15,.94); }
+html[data-workspace-theme="dark"] .workspace-content .builder-question-body,
+html[data-workspace-theme="dark"] .workspace-content .responsive-table th,
+html[data-workspace-theme="dark"] .workspace-content .assessment-start-stats > span,
+html[data-workspace-theme="dark"] .workspace-content .assessment-instructions,
+html[data-workspace-theme="dark"] .workspace-content .mark-breakdown span,
+html[data-workspace-theme="dark"] .workspace-content .feedback-box,
+html[data-workspace-theme="dark"] .workspace-content .answer-explanation,
+html[data-workspace-theme="dark"] .workspace-content .result-summary-badges span,
+html[data-workspace-theme="dark"] .workspace-content .submitted-answer,
+html[data-workspace-theme="dark"] .workspace-content .inline-editor > form,
+html[data-workspace-theme="dark"] .workspace-content .file-field,
+html[data-workspace-theme="dark"] .workspace-content .choice-fieldset label {
+  color:#f5f5f5;
+  background:#202024;
+  border-color:#34343a;
+}
+html[data-workspace-theme="dark"] .workspace-content .builder-question > header > div button,
+html[data-workspace-theme="dark"] .workspace-content .option-builder button,
+html[data-workspace-theme="dark"] .workspace-content .question-number-grid button,
+html[data-workspace-theme="dark"] .workspace-content .inline-editor > summary {
+  color:#f5f5f5;
+  background:#202024;
+  border-color:#3a3a40;
+}
+html[data-workspace-theme="dark"] .workspace-content input::placeholder,
+html[data-workspace-theme="dark"] .workspace-content textarea::placeholder { color:#858590; opacity:1; }
+html[data-workspace-theme="dark"] .workspace-content select option { color:#f5f5f5; background:#202024; }
+html[data-workspace-theme="dark"] .workspace-content input:-webkit-autofill,
+html[data-workspace-theme="dark"] .workspace-content textarea:-webkit-autofill,
+html[data-workspace-theme="dark"] .workspace-content select:-webkit-autofill {
+  -webkit-text-fill-color:#f5f5f5;
+  box-shadow:0 0 0 1000px #202024 inset;
+}
+html[data-workspace-theme="dark"] .workspace-content input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-workspace-theme="dark"] .workspace-content input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter:invert(1); }
+html[data-workspace-theme="dark"] .workspace-content .form-message { color:#ffd2d5; background:#351014; border:1px solid #6c2028; }
+html[data-workspace-theme="dark"] .workspace-content .locked-content-panel { color:#ffd17a; background:#30230d; border-color:#6e5120; }
+html[data-workspace-theme="dark"] .workspace-content .content-management-note,
+html[data-workspace-theme="dark"] .workspace-content .student-program-request { color:#ffd2d5; background:#351014; border-color:#6c2028; }
 
 @media (max-width:430px) {
   .workspace-theme-toggle { width:38px; height:38px; }
