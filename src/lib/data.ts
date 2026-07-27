@@ -4,6 +4,7 @@ import { isDemoMode, isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import {
   demoAssessments,
+  demoAcademicBatches,
   demoBatches,
   demoDashboardData,
   demoModules,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/demo-data";
 import type {
   Assessment,
+  AcademicBatch,
   Batch,
   DashboardData,
   ModuleItem,
@@ -68,20 +70,56 @@ export const getPublicBatches = cache(async (): Promise<Batch[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("batches")
-    .select("id,program_id,name,description,is_active")
+    .select("id,program_id,academic_batch_id,name,description,is_active,registration_open,sort_order,programs(name)")
     .eq("is_active", true)
-    .order("name", { ascending: true });
+    .eq("registration_open", true)
+    .order("sort_order", { ascending: true });
   if (error || !data) {
     console.error("public batches query failed", error);
     return [];
   }
-  return data.map((row) => ({
+  return data.map((row) => {
+    const relatedProgram = Array.isArray(row.programs) ? row.programs[0] : row.programs;
+    const programName = relatedProgram && typeof relatedProgram === "object" && "name" in relatedProgram ? String(relatedProgram.name) : "Class";
+    return {
     id: row.id,
     programId: row.program_id,
+    academicBatchId: row.academic_batch_id,
     name: row.name,
+    className: `${row.name} — ${programName}`,
     description: row.description ?? undefined,
+    registrationOpen: row.registration_open,
+    sortOrder: row.sort_order,
     isActive: row.is_active,
+  }; });
+});
+
+export const getPublicAcademicBatches = cache(async (): Promise<AcademicBatch[]> => {
+  if (isDemoMode()) return demoAcademicBatches.filter((batch) => batch.isActive);
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("academic_batches")
+    .select("id,name,academic_level,exam_year,is_active,sort_order")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error || !data) {
+    console.error("public academic batches query failed", error);
+    return [];
+  }
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    academicLevel: row.academic_level as AcademicBatch["academicLevel"],
+    examYear: row.exam_year,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
   }));
+});
+
+export const getLatestClasses = cache(async (): Promise<Batch[]> => {
+  const classes = await getPublicBatches();
+  return classes.slice(0, 6);
 });
 
 export const getProgramBySlug = cache(async (slug: string): Promise<Program | null> => {
@@ -159,6 +197,7 @@ export const getResultForStudent = cache(async (resultId: string): Promise<Resul
 
 export interface AdminData {
   programs: Program[];
+  academicBatches: AcademicBatch[];
   batches: Batch[];
   students: StudentProfile[];
   modules: ModuleItem[];
@@ -248,6 +287,7 @@ export const getAdminData = cache(async (): Promise<AdminData> => {
   if (isDemoMode()) {
     return {
       programs: demoPrograms,
+      academicBatches: demoAcademicBatches,
       batches: demoBatches,
       students: demoStudents,
       modules: demoModules,

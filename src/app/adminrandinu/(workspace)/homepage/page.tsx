@@ -7,7 +7,7 @@ import { PUBLIC_CONTENT_DEFAULTS, type PublicContentKey } from "@/lib/site-conte
 
 const groups: Array<{ title: string; fields: Array<{ key: PublicContentKey; label: string; area?: boolean }> }> = [
   { title: "Hero", fields: [{ key: "hero_eyebrow", label: "Small heading" }, { key: "hero_title", label: "Main heading" }, { key: "hero_highlight", label: "Highlighted heading" }] },
-  { title: "Programs", fields: [{ key: "programs_kicker", label: "Small heading" }, { key: "programs_title", label: "Heading" }] },
+  { title: "Classes", fields: [{ key: "programs_kicker", label: "Small heading" }, { key: "programs_title", label: "Heading" }] },
   { title: "About", fields: [{ key: "about_kicker", label: "Small heading" }, { key: "about_title", label: "Heading" }, { key: "about_lead", label: "Lead paragraph", area: true }, { key: "about_body", label: "Body paragraph", area: true }] },
   { title: "Why Smart ICT", fields: [{ key: "why_kicker", label: "Small heading" }, { key: "why_title", label: "Heading" }] },
   { title: "LMS", fields: [{ key: "lms_kicker", label: "Small heading" }, { key: "lms_title", label: "Heading" }, { key: "lms_description", label: "Introduction", area: true }] },

@@ -18,7 +18,7 @@ export const BRAND = {
 
 export const PUBLIC_NAV = [
   { label: "Home", href: "/#home", sectionId: "home" },
-  { label: "Programs", href: "/#programs", sectionId: "programs" },
+  { label: "Classes", href: "/#classes", sectionId: "classes" },
   { label: "About", href: "/#about", sectionId: "about" },
   { label: "Smart ICT LMS", href: "/#smart-lms", sectionId: "smart-lms" },
   { label: "Reviews", href: "/#reviews", sectionId: "reviews" },
@@ -40,7 +40,7 @@ export const STUDENT_NAV = [
 export const ADMIN_NAV = [
   { label: "Dashboard", href: "/adminrandinu/dashboard", icon: "LayoutDashboard" },
   { label: "Programs", href: "/adminrandinu/programs", icon: "GraduationCap" },
-  { label: "Batches", href: "/adminrandinu/batches", icon: "UsersRound" },
+  { label: "Batches & Classes", href: "/adminrandinu/batches", icon: "UsersRound" },
   { label: "Students", href: "/adminrandinu/students", icon: "UserRoundCheck" },
   { label: "Modules", href: "/adminrandinu/modules", icon: "Layers3" },
   { label: "Recordings", href: "/adminrandinu/recordings", icon: "Video" },

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, BookOpenCheck, BrainCircuit, ClipboardCheck, Download, Languages, Laptop2, MessageCircle, PlayCircle, Sparkles, Target, UserRoundCheck, Wrench } from "lucide-react";
 import { PublicLayout } from "@/components/public-layout";
 import { BRAND } from "@/lib/config";
-import { getPublicPrograms, getPublicSiteContent, getTestimonials } from "@/lib/data";
+import { getLatestClasses, getPublicPrograms, getPublicSiteContent, getTestimonials } from "@/lib/data";
 import { PUBLIC_CONTENT_DEFAULTS } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +19,22 @@ const whyItems = [
 ];
 
 export default async function HomePage() {
-  const [programs, testimonials, publicContent] = await Promise.all([getPublicPrograms(), getTestimonials(), getPublicSiteContent()]);
+  const [programs, classes, testimonials, publicContent] = await Promise.all([getPublicPrograms(), getLatestClasses(), getTestimonials(), getPublicSiteContent()]);
   const content = { ...PUBLIC_CONTENT_DEFAULTS, ...publicContent };
   return <PublicLayout><main className="public-page home-page">
     <section className="brand-hero" id="home"><div className="site-shell brand-hero-grid">
-      <div className="brand-hero-copy"><div className="eyebrow"><Sparkles size={15} />{content.hero_eyebrow}</div><h1>{content.hero_title} <span>{content.hero_highlight}</span></h1><div className="hero-actions"><Link href="/#programs" className="button button-primary button-large">Explore programs <ArrowRight size={18} /></Link><Link href="/login" className="button button-outline-light button-large">Student login</Link></div></div>
+      <div className="brand-hero-copy"><div className="eyebrow"><Sparkles size={15} />{content.hero_eyebrow}</div><h1>{content.hero_title} <span>{content.hero_highlight}</span></h1><div className="hero-actions"><Link href="/#classes" className="button button-primary button-large">Explore classes <ArrowRight size={18} /></Link><Link href="/login" className="button button-outline-light button-large">Student login</Link></div></div>
     </div></section>
 
-    <section className="section programs-section" id="programs"><div className="site-shell"><div className="section-heading"><span className="section-kicker">{content.programs_kicker}</span><h2>{content.programs_title}</h2></div><div className="program-grid">{programs.map((program) => <Link href={`/programs/${program.slug}`} className="program-card" key={program.id} aria-label={`Open ${program.name}`}><div className="program-image"><Image src={program.image} alt={program.name} width={640} height={640} unoptimized /></div><div className="program-card-body"><div className="program-tags"><span>{program.academicLevel}</span><span>{program.medium.join(" + ")}</span></div><h3>{program.name}</h3></div></Link>)}</div></div></section>
+    <section className="section programs-section" id="classes"><div className="site-shell"><div className="section-heading"><span className="section-kicker">LATEST CLASSES</span><h2>Find your Smart ICT class.</h2></div><div className="class-card-grid">{classes.map((item, index) => {
+      const program = programs.find((entry) => entry.id === item.programId);
+      return <article className={`public-class-card class-tone-${index % 3}`} key={item.id}>
+        <div className="class-text-thumbnail" role="img" aria-label={`${item.className} class thumbnail`}>
+          <span>SMART ICT</span><strong>{item.name}</strong><b>{program?.name ?? "ICT"}</b><small>CLASS</small>
+        </div>
+        <div className="public-class-card-body"><span>{item.name}</span><h3>{program?.name ?? "ICT"} Class</h3></div>
+      </article>;
+    })}</div></div></section>
 
     <section className="section teacher-feature-section" id="about"><div className="site-shell teacher-feature-grid"><div className="teacher-feature-media"><div className="teacher-feature-poster"><Image src={content.about_image_url} alt="Randinu Jayaratne" width={720} height={900} unoptimized /></div></div><div className="teacher-feature-copy"><span className="section-kicker light">{content.about_kicker}</span><h2>{content.about_title}</h2><p className="lead">{content.about_lead}</p><p>{content.about_body}</p></div></div></section>
 

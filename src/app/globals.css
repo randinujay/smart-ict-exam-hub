@@ -146,6 +146,19 @@ h1,h2,h3 { letter-spacing: -.035em; }
 .program-card-body h3 { font-size:1.55rem; margin:14px 0 10px; }
 .program-card-body p { color:var(--muted); line-height:1.65; font-size:.93rem; min-height:72px; }
 .program-card-body > a { display:inline-flex; align-items:center; gap:6px; color:var(--red); font-weight:850; font-size:.9rem; }
+.class-card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+.public-class-card { overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:#fff; box-shadow:var(--shadow-sm); }
+.class-text-thumbnail { position:relative; display:flex; min-height:250px; padding:28px; flex-direction:column; justify-content:center; overflow:hidden; color:#fff; background:linear-gradient(135deg,#140002 0%,#530009 52%,#ee0014 100%); isolation:isolate; }
+.class-text-thumbnail::before { content:""; position:absolute; inset:0; z-index:-1; background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom right,#000,transparent); }
+.class-tone-1 .class-text-thumbnail { background:linear-gradient(135deg,#0a0a0b 0%,#370005 48%,#a5000e 100%); }
+.class-tone-2 .class-text-thumbnail { background:linear-gradient(145deg,#260004 0%,#75000b 50%,#160003 100%); }
+.class-text-thumbnail span,.class-text-thumbnail small { font-size:.72rem; font-weight:900; letter-spacing:.18em; }
+.class-text-thumbnail strong { margin-top:auto; font-size:clamp(2rem,3vw,3.4rem); line-height:.95; letter-spacing:-.055em; }
+.class-text-thumbnail b { color:#ff2335; font-size:clamp(2.2rem,4vw,4.2rem); line-height:.95; text-transform:uppercase; letter-spacing:-.055em; }
+.class-text-thumbnail small { margin-top:16px; color:#ffb4bb; }
+.public-class-card-body { padding:20px 22px 22px; }
+.public-class-card-body span { color:var(--red); font-size:.74rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
+.public-class-card-body h3 { margin-top:6px; font-size:1.35rem; }
 .program-tags { display:flex; flex-wrap:wrap; gap:7px; }
 .program-tags span, .teacher-qualification-row span { border-radius:99px; padding:7px 10px; background:var(--red-soft); color:var(--red-dark); font-size:.7rem; font-weight:850; }
 
@@ -688,6 +701,11 @@ h1,h2,h3 { letter-spacing: -.035em; }
 .admin-quick-actions a, .admin-action-grid a { border:1px solid var(--line); padding:14px; border-radius:12px; display:flex; align-items:center; gap:10px; font-weight:750; font-size:.8rem; }
 .admin-quick-actions svg,.admin-action-grid svg { color:var(--red); }
 .admin-program-grid, .admin-assessment-grid, .admin-testimonial-grid, .settings-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
+.admin-two-column { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:18px; }
+.batch-group-row { flex-wrap:wrap; }
+.class-combination-list { display:grid; width:100%; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+.class-combination-row { display:grid; grid-template-columns:minmax(180px,1fr) auto auto auto auto; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; background:var(--soft); }
+.class-combination-row > span { color:var(--muted); font-size:.82rem; }
 .admin-program-image { aspect-ratio:1.55/1; border-radius:13px; overflow:hidden; margin-bottom:15px; }
 .admin-program-image img { width:100%; height:100%; object-fit:cover; }
 .admin-program-status { display:flex; justify-content:space-between; align-items:center; gap:10px; }
@@ -1363,4 +1381,14 @@ html[data-workspace-theme="dark"] .workspace-content .admin-home-actions > a:hov
 
 @media (max-width:430px) {
   .workspace-theme-toggle { width:38px; height:38px; }
+}
+@media (max-width:900px) {
+  .class-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .admin-two-column { grid-template-columns:1fr; }
+  .class-combination-row { grid-template-columns:1fr auto; }
+}
+@media (max-width:650px) {
+  .class-card-grid { grid-template-columns:1fr; gap:16px; }
+  .class-text-thumbnail { min-height:210px; }
+  .class-combination-row { grid-template-columns:1fr; align-items:start; }
 }

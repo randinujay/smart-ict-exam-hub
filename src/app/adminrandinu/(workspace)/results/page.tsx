@@ -19,9 +19,8 @@ function studentResults(results: ResultRecord[], studentId: string) {
 
 function eligibleForAssessment(student: StudentProfile, assessment: { programIds: string[]; batchIds: string[]; studentIds: string[] }) {
   if (student.accountStatus === "suspended") return false;
-  if (!assessment.programIds.length && !assessment.batchIds.length && !assessment.studentIds.length) return true;
+  if (!assessment.batchIds.length && !assessment.studentIds.length) return true;
   return assessment.studentIds.includes(student.id)
-    || assessment.programIds.some((id) => student.programIds.includes(id))
     || assessment.batchIds.some((id) => student.batchIds.includes(id));
 }
 
@@ -48,16 +47,12 @@ export default async function AdminResultsPage() {
   const improving = [...studentPerformance].filter((item) => item.trend > 0).sort((a, b) => b.trend - a.trend).slice(0, 5);
   const declining = [...studentPerformance].filter((item) => item.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 5);
 
-  const programAverages = data.programs.map((program) => {
-    const studentIds = new Set(data.students.filter((student) => student.programIds.includes(program.id)).map((student) => student.id));
-    const records = published.filter((result) => studentIds.has(result.studentId));
-    return { label: program.shortName, students: studentIds.size, results: records.length, average: average(records.map((item) => item.percentage)) };
-  });
   const batchAverages = data.batches.map((batch) => {
     const studentIds = new Set(data.students.filter((student) => student.batchIds.includes(batch.id)).map((student) => student.id));
     const records = published.filter((result) => studentIds.has(result.studentId));
-    return { label: batch.name, students: studentIds.size, results: records.length, average: average(records.map((item) => item.percentage)) };
+    return { label: batch.className, students: studentIds.size, results: records.length, average: average(records.map((item) => item.percentage)) };
   });
+  const programAverages = batchAverages;
 
   const distribution = [
     { label: "80–100%", count: published.filter((item) => item.percentage >= 80).length },
@@ -96,11 +91,11 @@ export default async function AdminResultsPage() {
 
     <section className="dashboard-chart-grid">
       <article className="admin-card">
-        <div className="card-heading-row"><div><span className="section-kicker">PROGRAM PERFORMANCE</span><h2>Program averages</h2></div></div>
+        <div className="card-heading-row"><div><span className="section-kicker">CLASS PERFORMANCE</span><h2>Class averages</h2></div></div>
         <div className="responsive-table"><table><thead><tr><th>Program</th><th>Students</th><th>Results</th><th>Average</th></tr></thead><tbody>{programAverages.map((item)=><tr key={item.label}><td>{item.label}</td><td>{item.students}</td><td>{item.results}</td><td><strong>{item.average?.toFixed(1) ?? "—"}%</strong></td></tr>)}</tbody></table></div>
       </article>
       <article className="admin-card">
-        <div className="card-heading-row"><div><span className="section-kicker">BATCH PERFORMANCE</span><h2>Batch averages</h2></div></div>
+        <div className="card-heading-row"><div><span className="section-kicker">CLASS COUNTS</span><h2>Students by class</h2></div></div>
         <div className="responsive-table"><table><thead><tr><th>Batch</th><th>Students</th><th>Results</th><th>Average</th></tr></thead><tbody>{batchAverages.map((item)=><tr key={item.label}><td>{item.label}</td><td>{item.students}</td><td>{item.results}</td><td><strong>{item.average?.toFixed(1) ?? "—"}%</strong></td></tr>)}</tbody></table></div>
       </article>
     </section>

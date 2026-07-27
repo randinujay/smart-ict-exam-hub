@@ -9,5 +9,5 @@ export default async function EditAssessmentPage({ params }: { params: Promise<{
   const assessment = data.assessments.find((item) => item.id === assessmentId);
   if (!assessment) notFound();
   const questionsLocked = data.attempts.some((attempt) => attempt.assessmentId === assessmentId);
-  return <AssessmentBuilder programs={data.programs} batches={data.batches} modules={data.modules} students={data.students} assessment={assessment} questionsLocked={questionsLocked} demoMode={!isSupabaseConfigured()} />;
+  return <AssessmentBuilder batches={data.batches} modules={data.modules} students={data.students} assessment={assessment} questionsLocked={questionsLocked} demoMode={!isSupabaseConfigured()} />;
 }

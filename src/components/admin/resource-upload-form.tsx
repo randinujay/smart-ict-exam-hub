@@ -3,11 +3,11 @@
 import { FormEvent, useState } from "react";
 import { LoaderCircle, UploadCloud } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { ModuleItem, Program } from "@/lib/types";
+import type { Batch, ModuleItem } from "@/lib/types";
 
 function safeName(name: string) { return name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-"); }
 
-export function ResourceUploadForm({ programs, modules, demoMode }: { programs: Program[]; modules: ModuleItem[]; demoMode: boolean }) {
+export function ResourceUploadForm({ classes, modules, demoMode }: { classes: Batch[]; modules: ModuleItem[]; demoMode: boolean }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -28,7 +28,7 @@ export function ResourceUploadForm({ programs, modules, demoMode }: { programs: 
       const response = await fetch("/api/admin/resources", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         title: form.get("title"), description: form.get("description"), moduleId: form.get("moduleId") || null,
         fileName: file.name, storagePath: path, fileType: form.get("fileType"), access: form.get("access"),
-        programIds: form.getAll("programIds"), isPublished: true,
+        batchIds: form.getAll("batchIds"), isPublished: true,
       }) });
       const payload = await response.json(); if (!response.ok) throw new Error(payload.error ?? "Could not save resource metadata.");
       setMessage("Resource uploaded and published."); event.currentTarget.reset();
@@ -48,7 +48,7 @@ export function ResourceUploadForm({ programs, modules, demoMode }: { programs: 
     <label className="field full"><span>Description</span><textarea name="description" rows={3} /></label>
     <label className="field"><span>Monthly module</span><select name="moduleId" defaultValue=""><option value="">Independent resource</option>{modules.map((module)=><option key={module.id} value={module.id}>{module.title}</option>)}</select></label>
     <label className="field"><span>Access</span><select name="access" defaultValue="paid"><option value="free">Free</option><option value="paid">Paid / module access</option></select></label>
-    <fieldset className="field full choice-fieldset"><legend>Programs</legend><div className="builder-checkboxes">{programs.map((program)=><label key={program.id}><input name="programIds" type="checkbox" value={program.id}/>{program.name}</label>)}</div></fieldset>
+    <fieldset className="field full choice-fieldset"><legend>Classes</legend><div className="builder-checkboxes">{classes.filter((item) => item.isActive).map((item)=><label key={item.id}><input name="batchIds" type="checkbox" value={item.id}/>{item.className}</label>)}</div></fieldset>
     <label className="field full file-field"><span>Choose file</span><input name="file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.zip" required /></label>
     {message&&<p className="form-message full">{message}</p>}
     <button className="button button-primary" disabled={busy}>{busy?<LoaderCircle className="spin" size={18}/>:<UploadCloud size={18}/>}Upload resource</button>

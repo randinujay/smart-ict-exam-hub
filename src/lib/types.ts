@@ -26,9 +26,22 @@ export interface Program {
 export interface Batch {
   id: string;
   programId: string;
+  academicBatchId: string;
   name: string;
+  className: string;
   description?: string;
+  registrationOpen: boolean;
+  sortOrder: number;
   isActive: boolean;
+}
+
+export interface AcademicBatch {
+  id: string;
+  name: string;
+  academicLevel: "O/L" | "A/L" | "Other";
+  examYear: number;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 export interface StudentProfile {

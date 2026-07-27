@@ -1,5 +1,6 @@
 import type {
   Assessment,
+  AcademicBatch,
   Batch,
   DashboardData,
   ModuleItem,
@@ -54,31 +55,21 @@ export const demoPrograms: Program[] = [
     registrationOpen: true,
     isActive: true,
   },
-  {
-    id: "program-rapid-revision",
-    slug: "rapid-revision",
-    name: "Rapid Revision",
-    shortName: "Rapid Revision",
-    description: "Fast, exam-oriented revision with intensive paper practice.",
-    academicLevel: "O/L",
-    examYear: null,
-    medium: ["Sinhala", "English"],
-    image: "/rapid-revision-poster.jpg",
-    isPublic: true,
-    registrationOpen: true,
-    isActive: true,
-  },
+];
+
+export const demoAcademicBatches: AcademicBatch[] = [
+  { id: "academic-batch-2026-ol", name: "2026 O/L", academicLevel: "O/L", examYear: 2026, isActive: true, sortOrder: 10 },
+  { id: "academic-batch-2027-ol", name: "2027 O/L", academicLevel: "O/L", examYear: 2027, isActive: true, sortOrder: 20 },
+  { id: "academic-batch-2027-al", name: "2027 A/L", academicLevel: "A/L", examYear: 2027, isActive: true, sortOrder: 30 },
 ];
 
 export const demoBatches: Batch[] = [
-  { id: "batch-theory-2026", programId: "program-theory", name: "2026 O/L", isActive: true },
-  { id: "batch-theory-2027", programId: "program-theory", name: "2027 O/L", isActive: true },
-  { id: "batch-revision-2026", programId: "program-revision", name: "2026 O/L", isActive: true },
-  { id: "batch-revision-2027", programId: "program-revision", name: "2027 O/L", isActive: true },
-  { id: "batch-paper-2026", programId: "program-paper", name: "2026 O/L", isActive: true },
-  { id: "batch-paper-2027", programId: "program-paper", name: "2027 O/L", isActive: true },
-  { id: "batch-rapid-2026", programId: "program-rapid-revision", name: "2026 O/L", isActive: true },
-  { id: "batch-rapid-2027", programId: "program-rapid-revision", name: "2027 O/L", isActive: true },
+  { id: "batch-theory-2026", programId: "program-theory", academicBatchId: "academic-batch-2026-ol", name: "2026 O/L", className: "2026 O/L — Theory", registrationOpen: false, sortOrder: 0, isActive: false },
+  { id: "batch-revision-2026", programId: "program-revision", academicBatchId: "academic-batch-2026-ol", name: "2026 O/L", className: "2026 O/L — Revision", registrationOpen: true, sortOrder: 10, isActive: true },
+  { id: "batch-paper-2026", programId: "program-paper", academicBatchId: "academic-batch-2026-ol", name: "2026 O/L", className: "2026 O/L — Paper", registrationOpen: true, sortOrder: 20, isActive: true },
+  { id: "batch-theory-2027", programId: "program-theory", academicBatchId: "academic-batch-2027-ol", name: "2027 O/L", className: "2027 O/L — Theory", registrationOpen: true, sortOrder: 30, isActive: true },
+  { id: "batch-revision-2027-al", programId: "program-revision", academicBatchId: "academic-batch-2027-al", name: "2027 A/L", className: "2027 A/L — Revision", registrationOpen: true, sortOrder: 40, isActive: true },
+  { id: "batch-paper-2027-al", programId: "program-paper", academicBatchId: "academic-batch-2027-al", name: "2027 A/L", className: "2027 A/L — Paper", registrationOpen: true, sortOrder: 50, isActive: true },
 ];
 
 export const demoStudent: StudentProfile = {

@@ -72,8 +72,8 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
     </section>
 
     <section className="admin-card">
-      <span className="section-kicker">PROGRAM ASSIGNMENTS</span><h2>Current programs</h2>
-      <div className="assignment-list">{student.programIds.length ? student.programIds.map((programId) => { const program = data.programs.find((item) => item.id === programId); return <div key={programId}><strong>{program?.name ?? "Program"}</strong><form action={unassignStudentAction}><input type="hidden" name="studentId" value={student.id} /><input type="hidden" name="programId" value={programId} /><ConfirmSubmitButton className="button button-outline button-small" message={`Remove ${program?.name ?? "this program"} from ${student.fullName}?`}><UserMinus size={15} />Remove</ConfirmSubmitButton></form></div>; }) : <p className="empty-copy">No program assigned.</p>}</div>
+      <span className="section-kicker">CLASS ASSIGNMENTS</span><h2>Current classes</h2>
+      <div className="assignment-list">{student.batchIds.length ? student.batchIds.map((batchId) => { const assignedClass = data.batches.find((item) => item.id === batchId); return <div key={batchId}><strong>{assignedClass?.className ?? "Class"}</strong><form action={unassignStudentAction}><input type="hidden" name="studentId" value={student.id} /><input type="hidden" name="programId" value={assignedClass?.programId ?? ""} /><input type="hidden" name="batchId" value={batchId} /><ConfirmSubmitButton className="button button-outline button-small" message={`Remove ${assignedClass?.className ?? "this class"} from ${student.fullName}?`}><UserMinus size={15} />Remove</ConfirmSubmitButton></form></div>; }) : <p className="empty-copy">No class assigned.</p>}</div>
     </section>
 
     <section className="results-table-card">

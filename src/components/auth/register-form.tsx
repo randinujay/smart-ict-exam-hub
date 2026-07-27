@@ -8,17 +8,22 @@ import { initialActionState } from "@/lib/action-state";
 
 interface RegisterFormProps {
   programs: Array<{ id: string; name: string }>;
-  batches: Array<{ id: string; programId: string; name: string }>;
+  academicBatches: Array<{ id: string; name: string }>;
+  classes: Array<{ id: string; programId: string; academicBatchId: string }>;
 }
 
 function ErrorText({ id, message }: { id: string; message?: string }) {
   return message ? <small id={id} role="alert">{message}</small> : null;
 }
 
-export function RegisterForm({ programs, batches }: RegisterFormProps) {
+export function RegisterForm({ programs, academicBatches, classes }: RegisterFormProps) {
   const [state, action, pending] = useActionState(registerStudentAction, initialActionState);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const savedClass = classes.find((item) => item.id === state.values?.batchId);
+  const [selectedAcademicBatchId, setSelectedAcademicBatchId] = useState(String(state.values?.academicBatchId ?? savedClass?.academicBatchId ?? ""));
   const [selectedProgramId, setSelectedProgramId] = useState(String(state.values?.programId ?? ""));
+  const availablePrograms = programs.filter((program) => classes.some((item) => item.academicBatchId === selectedAcademicBatchId && item.programId === program.id));
+  const selectedClass = classes.find((item) => item.academicBatchId === selectedAcademicBatchId && item.programId === selectedProgramId);
   const error = (name: string) => clientErrors[name] ?? state.fieldErrors?.[name];
   const saved = state.values ?? {};
   const requiredLabel = (label: string) => <>{label}<span className="required-mark" aria-hidden="true"> *</span></>;
@@ -36,8 +41,9 @@ export function RegisterForm({ programs, batches }: RegisterFormProps) {
     if (value("address").length < 5) errors.address = "Enter the address.";
     if (value("school").length < 2) errors.school = "Enter the school.";
     if (!['Sinhala', 'English'].includes(value("medium"))) errors.medium = "Select the medium.";
+    if (!value("academicBatchId")) errors.academicBatchId = "Select a batch.";
     if (!value("programId")) errors.programId = "Select a program.";
-    if (!value("batchId")) errors.batchId = "Select a batch.";
+    if (!value("batchId")) errors.batchId = "That class is not available.";
     if (value("password").length < 8) errors.password = "Use at least 8 characters.";
     if (value("password") !== value("confirmPassword")) errors.confirmPassword = "Passwords do not match.";
     if (Object.keys(errors).length) {
@@ -67,15 +73,16 @@ export function RegisterForm({ programs, batches }: RegisterFormProps) {
     <label className={`field ${error("school") ? "has-error" : ""}`}><span>{requiredLabel("School")}</span><input name="school" autoComplete="organization" defaultValue={saved.school} required aria-required="true" aria-invalid={Boolean(error("school"))} aria-describedby={error("school") ? "school-error" : undefined}/><ErrorText id="school-error" message={error("school")}/></label>
     <div className="field-grid two-fields">
       <label className={`field ${error("medium") ? "has-error" : ""}`}><span>{requiredLabel("Medium")}</span><select name="medium" defaultValue={saved.medium ?? ""} required aria-required="true" aria-invalid={Boolean(error("medium"))} aria-describedby={error("medium") ? "medium-error" : undefined}><option value="" disabled>Select medium</option><option value="Sinhala">Sinhala Medium</option><option value="English">English Medium</option></select><ErrorText id="medium-error" message={error("medium")}/></label>
-      <label className={`field ${error("programId") ? "has-error" : ""}`}><span>{requiredLabel("Program")}</span><select name="programId" value={selectedProgramId} onChange={(event) => setSelectedProgramId(event.target.value)} required disabled={!programs.length} aria-required="true" aria-invalid={Boolean(error("programId"))} aria-describedby={error("programId") ? "programId-error" : undefined}><option value="" disabled>{programs.length ? "Select your program" : "No programs open"}</option>{programs.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select><ErrorText id="programId-error" message={error("programId")}/></label>
+      <label className={`field ${error("academicBatchId") ? "has-error" : ""}`}><span>{requiredLabel("Batch")}</span><select name="academicBatchId" value={selectedAcademicBatchId} onChange={(event) => { setSelectedAcademicBatchId(event.target.value); setSelectedProgramId(""); }} required disabled={!academicBatches.length} aria-required="true" aria-invalid={Boolean(error("academicBatchId"))} aria-describedby={error("academicBatchId") ? "academicBatchId-error" : undefined}><option value="" disabled>{academicBatches.length ? "Select your batch" : "No batches open"}</option>{academicBatches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select><ErrorText id="academicBatchId-error" message={error("academicBatchId")}/></label>
+      <label className={`field ${error("programId") || error("batchId") ? "has-error" : ""}`}><span>{requiredLabel("Program")}</span><select name="programId" value={selectedProgramId} onChange={(event) => setSelectedProgramId(event.target.value)} required disabled={!selectedAcademicBatchId || !availablePrograms.length} aria-required="true" aria-invalid={Boolean(error("programId") || error("batchId"))} aria-describedby={error("programId") || error("batchId") ? "programId-error" : undefined}><option value="" disabled>{selectedAcademicBatchId ? "Select your program" : "Select a batch first"}</option>{availablePrograms.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select><ErrorText id="programId-error" message={error("programId") ?? error("batchId")}/></label>
     </div>
-    <label className={`field ${error("batchId") ? "has-error" : ""}`}><span>{requiredLabel("Batch")}</span><select name="batchId" key={selectedProgramId} defaultValue={saved.programId === selectedProgramId ? saved.batchId ?? "" : ""} required disabled={!selectedProgramId || !batches.some((batch) => batch.programId === selectedProgramId)} aria-required="true" aria-invalid={Boolean(error("batchId"))} aria-describedby={error("batchId") ? "batchId-error" : undefined}><option value="" disabled>{selectedProgramId ? "Select your batch" : "Select a program first"}</option>{batches.filter((batch) => batch.programId === selectedProgramId).map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select><ErrorText id="batchId-error" message={error("batchId")}/></label>
-    {(!programs.length || !batches.length) && <p className="form-message error" role="alert">No classes are open for registration. Contact Smart ICT.</p>}
+    <input type="hidden" name="batchId" value={selectedClass?.id ?? ""} />
+    {(!programs.length || !classes.length || !academicBatches.length) && <p className="form-message error" role="alert">No classes are open for registration. Contact Smart ICT.</p>}
     <div className="field-grid two-fields">
       <PasswordInput name="password" label="Password" minLength={8} autoComplete="new-password" required showRequiredMark error={error("password")}/>
       <PasswordInput name="confirmPassword" label="Confirm password" minLength={8} autoComplete="new-password" required showRequiredMark error={error("confirmPassword")}/>
     </div>
     {state.message && <p className={`form-message ${state.ok ? "success" : "error"}`} role="status">{state.message}</p>}
-    <button className="button button-primary button-full" disabled={pending || !programs.length || !batches.length}>{pending ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>}Create account</button>
+    <button className="button button-primary button-full" disabled={pending || !programs.length || !classes.length || !academicBatches.length}>{pending ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>}Create account</button>
   </form>;
 }

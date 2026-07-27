@@ -47,15 +47,15 @@ type AdminClient = NonNullable<Awaited<ReturnType<typeof requireAdmin>>>;
 async function requireClassSelection(supabase: AdminClient, formData: FormData) {
   const programId = value(formData, "programId");
   const batchId = value(formData, "batchId");
-  if (!programId || !batchId) throw new Error("Select a program and batch.");
+  if (!programId || !batchId) throw new Error("Select a batch and program.");
   const { data, error } = await supabase
     .from("batches")
-    .select("id")
+    .select("id,academic_batch_id")
     .eq("id", batchId)
     .eq("program_id", programId)
     .eq("is_active", true)
     .maybeSingle();
-  if (error || !data) throw new Error("Select a batch from the chosen program.");
+  if (error || !data) throw new Error("Select an available class.");
   return { programId, batchId };
 }
 
@@ -82,25 +82,19 @@ export async function changeAdminPasswordAction(formData: FormData) {
 export async function createProgramAction(formData: FormData) {
   const supabase = await requireAdmin();
   if (!supabase) return;
-  const mediums = formData.getAll("mediums").map(String);
   const name=value(formData,"name");const shortName=value(formData,"shortName");
-  const academicLevel=requireChoice(value(formData,"academicLevel"),["O/L","A/L","Other"],"academic level");
-  const examYear=value(formData,"examYear")?Number(value(formData,"examYear")):null;
   if(name.length<3||shortName.length<2)throw new Error("Enter a valid program name and short name.");
-  if(!mediums.length||mediums.some((item)=>!["Sinhala","English"].includes(item)))throw new Error("Select at least one valid medium.");
-  if(examYear!==null&&(!Number.isInteger(examYear)||examYear<2026||examYear>2100))throw new Error("Enter a valid exam year.");
-  const coverImage=value(formData,"coverImage")||"/ol-theory-poster.jpg";
   const { error } = await supabase.from("programs").insert({
     name,
     short_name: shortName,
     slug: value(formData, "slug").toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
     description: value(formData, "description"),
-    academic_level: academicLevel,
-    exam_year: examYear,
-    mediums,
-    cover_image_url: requireWebUrl(coverImage,"cover image",true),
-    is_public: bool(formData, "isPublic"),
-    registration_open: bool(formData, "registrationOpen"),
+    academic_level: "Other",
+    exam_year: null,
+    mediums: ["Sinhala", "English"],
+    cover_image_url: "/ol-theory-poster.jpg",
+    is_public: true,
+    registration_open: true,
     is_active: true,
   });
   if (error) throw new Error(error.message);
@@ -109,8 +103,27 @@ export async function createProgramAction(formData: FormData) {
 
 export async function createBatchAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
-  const { error } = await supabase.from("batches").insert({ program_id: value(formData,"programId"), name: value(formData,"name"), description: value(formData,"description"), is_active: true });
+  const academicBatchId = value(formData, "academicBatchId");
+  const programId = value(formData, "programId");
+  const { data: academicBatch, error: batchReadError } = await supabase.from("academic_batches").select("name").eq("id", academicBatchId).eq("is_active", true).single();
+  if (batchReadError || !academicBatch) throw new Error("Select an active batch.");
+  const { error } = await supabase.from("batches").insert({
+    academic_batch_id: academicBatchId, program_id: programId, name: academicBatch.name,
+    description: value(formData,"description") || null, is_active: true,
+    registration_open: bool(formData, "registrationOpen"),
+  });
   if (error) throw new Error(error.message); revalidatePath("/adminrandinu/batches");
+}
+
+export async function createAcademicBatchAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const examYear = Number(value(formData, "examYear"));
+  const academicLevel = requireChoice(value(formData, "academicLevel"), ["O/L", "A/L", "Other"], "academic level");
+  if (!Number.isInteger(examYear) || examYear < 2026 || examYear > 2200) throw new Error("Enter a valid exam year.");
+  const name = `${examYear} ${academicLevel}`;
+  const { error } = await supabase.from("academic_batches").insert({ name, exam_year: examYear, academic_level: academicLevel, is_active: true });
+  if (error) throw new Error(error.message);
+  revalidatePath("/adminrandinu/batches"); revalidatePath("/register");
 }
 
 export async function createModuleAction(formData: FormData) {
@@ -286,17 +299,12 @@ export async function setStudentAccessOverrideAction(formData: FormData) {
 export async function updateProgramAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
   const programId = value(formData, "programId");
-  const mediums = formData.getAll("mediums").map(String);
-  const examYear = value(formData, "examYear") ? Number(value(formData, "examYear")) : null;
-  if (!mediums.length || mediums.some((item) => !["Sinhala", "English"].includes(item))) throw new Error("Select at least one medium.");
-  const coverImage = value(formData, "coverImage") || "/ol-theory-poster.jpg";
   const { error } = await supabase.from("programs").update({
     name: value(formData, "name"), short_name: value(formData, "shortName"),
     slug: value(formData, "slug").toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
     description: value(formData, "description"),
-    academic_level: requireChoice(value(formData, "academicLevel"), ["O/L", "A/L", "Other"], "academic level"),
-    exam_year: examYear, mediums, cover_image_url: requireWebUrl(coverImage, "cover image", true),
-    is_public: bool(formData, "isPublic"), registration_open: bool(formData, "registrationOpen"), is_active: bool(formData, "isActive"),
+    academic_level: "Other", exam_year: null, mediums: ["Sinhala", "English"],
+    is_public: true, registration_open: true, is_active: bool(formData, "isActive"),
   }).eq("id", programId);
   if (error) throw new Error(error.message);
   revalidatePath("/adminrandinu/programs"); revalidatePath("/programs"); revalidatePath("/register"); revalidatePath("/");
@@ -311,12 +319,36 @@ export async function deleteProgramAction(formData: FormData) {
 
 export async function updateBatchAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
+  const academicBatchId = value(formData, "academicBatchId");
+  const { data: academicBatch, error: batchReadError } = await supabase.from("academic_batches").select("name").eq("id", academicBatchId).single();
+  if (batchReadError || !academicBatch) throw new Error("Select a valid batch.");
   const { error } = await supabase.from("batches").update({
-    program_id: value(formData, "programId"), name: value(formData, "name"),
+    academic_batch_id: academicBatchId, program_id: value(formData, "programId"), name: academicBatch.name,
     description: value(formData, "description") || null, is_active: bool(formData, "isActive"),
+    registration_open: bool(formData, "registrationOpen"),
   }).eq("id", value(formData, "batchId"));
   if (error) throw new Error(error.message);
   revalidatePath("/adminrandinu/batches"); revalidatePath("/adminrandinu/students");
+}
+
+export async function updateAcademicBatchAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const examYear = Number(value(formData, "examYear"));
+  const academicLevel = requireChoice(value(formData, "academicLevel"), ["O/L", "A/L", "Other"], "academic level");
+  if (!Number.isInteger(examYear) || examYear < 2026 || examYear > 2200) throw new Error("Enter a valid exam year.");
+  const batchId = value(formData, "academicBatchId");
+  const name = `${examYear} ${academicLevel}`;
+  const { error } = await supabase.from("academic_batches").update({ name, exam_year: examYear, academic_level: academicLevel, is_active: bool(formData, "isActive") }).eq("id", batchId);
+  if (error) throw new Error(error.message);
+  await supabase.from("batches").update({ name }).eq("academic_batch_id", batchId);
+  revalidatePath("/adminrandinu/batches"); revalidatePath("/register"); revalidatePath("/");
+}
+
+export async function deleteAcademicBatchAction(formData: FormData) {
+  const supabase = await requireAdmin(); if (!supabase) return;
+  const { error } = await supabase.from("academic_batches").delete().eq("id", value(formData, "academicBatchId"));
+  if (error) throw new Error(`This batch still has classes. Remove those classes first. ${error.message}`);
+  revalidatePath("/adminrandinu/batches"); revalidatePath("/register");
 }
 
 export async function deleteBatchAction(formData: FormData) {
@@ -384,7 +416,7 @@ export async function updateResourceAction(formData: FormData) {
   if (error) throw new Error(error.message);
   const { error: audienceDeleteError } = await supabase.from("content_audiences").delete().eq("content_type", "resource").eq("content_id", resourceId);
   if (audienceDeleteError) throw new Error(audienceDeleteError.message);
-  const audiences = formData.getAll("programIds").map(String).filter(Boolean).map((programId) => ({ content_type: "resource", content_id: resourceId, program_id: programId }));
+  const audiences = formData.getAll("batchIds").map(String).filter(Boolean).map((batchId) => ({ content_type: "resource", content_id: resourceId, batch_id: batchId }));
   if (audiences.length) {
     const { error: audienceError } = await supabase.from("content_audiences").insert(audiences);
     if (audienceError) throw new Error(audienceError.message);

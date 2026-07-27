@@ -16,7 +16,7 @@ function localInput(value?: string | null) {
 function ModuleFields({ data, module }: { data: Awaited<ReturnType<typeof getAdminData>>; module?: Awaited<ReturnType<typeof getAdminData>>["modules"][number] }) {
   return <>
     {module && <input type="hidden" name="moduleId" value={module.id} />}
-    <ClassSelectFields programs={data.programs} batches={data.batches} defaultProgramId={module?.programId} defaultBatchId={module?.batchId ?? ""} />
+    <ClassSelectFields programs={data.programs} academicBatches={data.academicBatches} batches={data.batches} defaultProgramId={module?.programId} defaultBatchId={module?.batchId ?? ""} />
     <label className="field"><span>Month</span><select name="month" defaultValue={module?.month ?? new Date().getMonth() + 1}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{monthName(index + 1)}</option>)}</select></label>
     <label className="field"><span>Year</span><input name="year" type="number" min="2026" defaultValue={module?.year ?? 2026} required /></label>
     <label className="field full"><span>Title</span><input name="title" defaultValue={module?.title} required={Boolean(module)} /></label>
@@ -32,11 +32,10 @@ export default async function AdminModulesPage() {
   return <div>
     <PageHeading eyebrow="MONTHLY CONTENT" title="Modules" />
     <details className="admin-create-panel"><summary><Plus size={17} />Add module</summary><form action={createModuleAction} className="admin-form-grid"><ModuleFields data={data} /><button className="button button-primary"><Plus size={17} />Add module</button></form></details>
-    <section className="admin-module-table"><div className="responsive-table"><table><thead><tr><th>Module</th><th>Program</th><th>Batch</th><th>Content</th><th>Access</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    <section className="admin-module-table"><div className="responsive-table"><table><thead><tr><th>Module</th><th>Class</th><th>Content</th><th>Access</th><th>Status</th><th>Actions</th></tr></thead><tbody>
       {data.modules.map((module) => <tr key={module.id}>
         <td><div className="table-title-cell"><strong>{module.title}</strong><span>{monthName(module.month)} {module.year}</span></div></td>
-        <td>{data.programs.find((program) => program.id === module.programId)?.shortName}</td>
-        <td>{data.batches.find((batch) => batch.id === module.batchId)?.name || "Unassigned"}</td>
+        <td>{data.batches.find((item) => item.id === module.batchId)?.className || "Unassigned"}</td>
         <td>{module.recordings.length} videos / {module.resources.length} files / {module.assessmentIds.length} tests</td>
         <td><StatusBadge tone={module.access === "free" ? "success" : "brand"}>{module.access}</StatusBadge></td>
         <td><StatusBadge tone={module.status === "published" ? "success" : module.status === "upcoming" ? "warning" : "neutral"}>{module.status}</StatusBadge></td>

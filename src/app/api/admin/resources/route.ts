@@ -28,10 +28,10 @@ export async function POST(request: Request) {
     }).select("id").single();
     if (error || !resource) throw error ?? new Error("Resource was not created.");
 
-    const audiences = (Array.isArray(body.programIds) ? body.programIds : []).map((programId: unknown) => ({
+    const audiences = (Array.isArray(body.batchIds) ? body.batchIds : []).map((batchId: unknown) => ({
       content_type: "resource",
       content_id: resource.id,
-      program_id: String(programId),
+      batch_id: String(batchId),
     }));
     if (audiences.length) {
       const { error: audienceError } = await auth.supabase.from("content_audiences").insert(audiences);

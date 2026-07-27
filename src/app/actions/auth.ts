@@ -35,11 +35,12 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const address = required(formData, "address");
   const school = required(formData, "school");
   const medium = required(formData, "medium");
+  const academicBatchId = required(formData, "academicBatchId");
   const programId = required(formData, "programId");
   const batchId = required(formData, "batchId");
   const password = required(formData, "password");
   const confirmPassword = required(formData, "confirmPassword");
-  const values = { firstName, lastName, dateOfBirth, nic, phone, address, school, medium, programId, batchId };
+  const values = { firstName, lastName, dateOfBirth, nic, phone, address, school, medium, academicBatchId, programId, batchId };
 
   const fieldErrors: Record<string, string> = {};
   if (firstName.length < 2) fieldErrors.firstName = "Enter the first name.";
@@ -51,6 +52,7 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   if (address.length < 5) fieldErrors.address = "Enter the address.";
   if (school.length < 2) fieldErrors.school = "Enter the school.";
   if (!['Sinhala', 'English'].includes(medium)) fieldErrors.medium = "Select the medium.";
+  if (!/^[0-9a-f-]{36}$/i.test(academicBatchId)) fieldErrors.academicBatchId = "Select a batch.";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(programId)) fieldErrors.programId = "Select a program.";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(batchId)) fieldErrors.batchId = "Select a batch.";
   if (password.length < 8) fieldErrors.password = "Use at least 8 characters.";
@@ -65,7 +67,7 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const supabase = await createClient();
   const { data: requestedProgram, error: programError } = await supabase
     .from("programs")
-    .select("id,name")
+    .select("id,name,academic_batch_id,registration_open,academic_batches!inner(id,is_active)")
     .eq("id", programId)
     .eq("is_active", true)
     .eq("registration_open", true)
@@ -78,10 +80,13 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
     .select("id,name")
     .eq("id", batchId)
     .eq("program_id", programId)
+    .eq("academic_batch_id", academicBatchId)
     .eq("is_active", true)
+    .eq("registration_open", true)
+    .eq("academic_batches.is_active", true)
     .maybeSingle();
   if (batchError || !requestedBatch) {
-    return { ok: false, message: "That class is not open for registration.", fieldErrors: { batchId: "Choose a valid batch." }, values };
+    return { ok: false, message: "That class is not open for registration.", fieldErrors: { batchId: "Choose a valid program for this batch." }, values };
   }
 
   let createdUserId = "";

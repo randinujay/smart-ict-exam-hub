@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Check, ChevronDown, ChevronUp, CirclePlus, Copy, LoaderCircle, Save, Trash2 } from "lucide-react";
-import type { Assessment, Batch, ModuleItem, Program, QuestionType, StudentProfile } from "@/lib/types";
+import type { Assessment, Batch, ModuleItem, QuestionType, StudentProfile } from "@/lib/types";
 
 type DraftOption = { id: string; key: string; text: string };
 type DraftQuestion = { id: string; type: QuestionType; prompt: string; marks: number; imageUrl: string; options: DraftOption[]; correctAnswer: string | string[]; explanation: string };
 
 interface AssessmentBuilderProps {
-  programs: Program[];
   batches: Batch[];
   modules: ModuleItem[];
   students: StudentProfile[];
@@ -55,7 +54,7 @@ function initialQuestions(assessment?: Assessment): DraftQuestion[] {
   }));
 }
 
-export function AssessmentBuilder({ programs, batches, modules, students, demoMode, assessment, questionsLocked = false }: AssessmentBuilderProps) {
+export function AssessmentBuilder({ batches, modules, students, demoMode, assessment, questionsLocked = false }: AssessmentBuilderProps) {
   const [questions, setQuestions] = useState<DraftQuestion[]>(() => initialQuestions(assessment));
   const [expanded, setExpanded] = useState<string>(() => assessment?.questions[0]?.id ?? questions[0]?.id ?? "");
   const [delivery, setDelivery] = useState(assessment?.delivery ?? "online");
@@ -114,7 +113,7 @@ export function AssessmentBuilder({ programs, batches, modules, students, demoMo
       maxAttempts: Number(formData.get("maxAttempts") || 1), shuffleQuestions: formData.get("shuffleQuestions") === "on",
       shuffleOptions: formData.get("shuffleOptions") === "on", showAnswers: formData.get("showAnswers") === "on",
       showResults: formData.get("showResults") === "on", access: formData.get("access"), moduleId: formData.get("moduleId") || null,
-      programIds: formData.getAll("programIds"), batchIds: formData.getAll("batchIds"), studentIds: formData.getAll("studentIds"),
+      programIds: [], batchIds: formData.getAll("batchIds"), studentIds: formData.getAll("studentIds"),
       questions: isOffline ? [] : preparedQuestions,
       totalMarks: isOffline ? Number(formData.get("offlineTotalMarks") || 100) : totalMarks,
     };
@@ -181,9 +180,8 @@ export function AssessmentBuilder({ programs, batches, modules, students, demoMo
           <label className="field"><span>Maximum attempts</span><input name="maxAttempts" type="number" min="1" max="10" defaultValue={assessment?.maxAttempts ?? 1} /></label>
           <label className="field"><span>Access</span><select name="access" value={access} onChange={(event) => setAccess(event.target.value as "free" | "paid")}><option value="free">Free</option><option value="paid">Paid</option></select></label>
           {access === "paid" && <label className="field"><span>Monthly module</span><select name="moduleId" required defaultValue={assessment?.moduleId ?? ""}><option value="">Select a module</option>{modules.map((module) => <option key={module.id} value={module.id}>{module.title}</option>)}</select></label>}
-          <label className="field full"><span>Programs</span><select name="programIds" multiple size={Math.min(Math.max(programs.length, 2), 5)} defaultValue={assessment?.programIds}>{programs.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select></label>
-          <label className="field full"><span>Batches</span><select name="batchIds" multiple size={Math.min(Math.max(batches.length, 2), 5)} defaultValue={assessment?.batchIds}>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></label>
-          <label className="field full"><span>Individual students</span><select name="studentIds" multiple size={Math.min(Math.max(students.length, 3), 7)} defaultValue={assessment?.studentIds}>{students.map((student) => <option key={student.id} value={student.id}>{student.fullName} - {student.phone}</option>)}</select></label>
+          <label className="field full"><span>Classes (select one or more)</span><select name="batchIds" multiple size={Math.min(Math.max(batches.filter((item) => item.isActive).length, 3), 7)} defaultValue={assessment?.batchIds}>{batches.filter((item) => item.isActive).map((batch) => <option key={batch.id} value={batch.id}>{batch.className}</option>)}</select></label>
+          <label className="field full"><span>Individual students</span><select name="studentIds" multiple size={Math.min(Math.max(students.length, 3), 7)} defaultValue={assessment?.studentIds}>{students.map((student) => <option key={student.id} value={student.id}>{student.fullName} — {student.batchIds.map((id) => batches.find((item) => item.id === id)?.className).filter(Boolean).join(", ") || "No class"}</option>)}</select></label>
           <div className="builder-checkboxes full"><label><input name="shuffleQuestions" type="checkbox" defaultChecked={assessment?.shuffleQuestions} />Shuffle questions</label><label><input name="shuffleOptions" type="checkbox" defaultChecked={assessment?.shuffleOptions} />Shuffle options</label><label><input name="showResults" type="checkbox" defaultChecked={assessment?.showResults ?? true} />Show marks</label><label><input name="showAnswers" type="checkbox" defaultChecked={assessment?.showAnswers} />Show answers</label></div>
         </div>
       </section>
