@@ -179,6 +179,71 @@ export interface AdminData {
   testimonials: Testimonial[];
 }
 
+export interface AdminDashboardSummary {
+  stats: {
+    students: number;
+    verified: number;
+    pending: number;
+    publishedModules: number;
+    programs: number;
+    paidThisMonth: number;
+  };
+  pendingStudents: Array<{
+    id: string;
+    fullName: string;
+    initials: string;
+    school: string;
+    medium: string;
+    createdAt: string;
+  }>;
+  recentResults: Array<{
+    id: string;
+    assessmentTitle: string;
+    studentName: string;
+    percentage: number;
+    completedAt: string;
+  }>;
+}
+
+export const getAdminDashboardSummary = cache(async (): Promise<AdminDashboardSummary> => {
+  if (isDemoMode()) {
+    const pendingStudents = demoStudents.filter((student) => student.accountStatus === "pending");
+    return {
+      stats: {
+        students: demoStudents.length,
+        verified: demoStudents.filter((student) => student.accountStatus === "verified").length,
+        pending: pendingStudents.length,
+        publishedModules: demoModules.filter((module) => module.status === "published").length,
+        programs: demoPrograms.filter((program) => program.isActive).length,
+        paidThisMonth: demoPayments.filter((payment) => ["paid", "waived"].includes(payment.status)).length,
+      },
+      pendingStudents: pendingStudents.slice(0, 5).map((student) => ({
+        id: student.id,
+        fullName: student.fullName,
+        initials: `${student.firstName[0]}${student.lastName[0]}`.toUpperCase(),
+        school: student.school,
+        medium: student.medium,
+        createdAt: student.createdAt,
+      })),
+      recentResults: [...demoResults].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).slice(0, 5).map((result) => ({
+        id: result.id,
+        assessmentTitle: result.assessmentTitle,
+        studentName: demoStudents.find((student) => student.id === result.studentId)?.fullName ?? "Student",
+        percentage: result.percentage,
+        completedAt: result.completedAt,
+      })),
+    };
+  }
+  if (!isSupabaseConfigured()) throw new Error("Supabase configuration is missing.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_admin_dashboard_summary");
+  if (error || !data) {
+    console.error("get_admin_dashboard_summary failed", error);
+    throw new Error("The administration dashboard could not be loaded.");
+  }
+  return data as AdminDashboardSummary;
+});
+
 export const getAdminData = cache(async (): Promise<AdminData> => {
   if (isDemoMode()) {
     return {

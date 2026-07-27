@@ -7,15 +7,18 @@ import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
 import { WorkspaceThemeToggle } from "@/components/workspace-theme-toggle";
+import { useWorkspaceFeedback } from "@/components/use-workspace-feedback";
 import { ADMIN_NAV } from "@/lib/config";
 import { signOutAction } from "@/app/actions/auth";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const feedback = useWorkspaceFeedback(pathname, children);
 
   return (
-    <div className="workspace-shell admin-workspace">
+    <div className={`workspace-shell admin-workspace ${feedback.busy ? "is-busy" : ""}`} onClickCapture={feedback.onClickCapture} onSubmitCapture={feedback.onSubmitCapture}>
+      {feedback.busy && <div className="workspace-progress" role="status" aria-label={feedback.pendingHref ? "Opening page" : "Saving changes"}><span /></div>}
       <aside className={`workspace-sidebar admin-sidebar ${open ? "is-open" : ""}`}>
         <div className="sidebar-brand-row">
           <Logo href="/adminrandinu/dashboard" compact inverse />
@@ -27,7 +30,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           {ADMIN_NAV.map((item) => {
             const active = pathname === item.href || (item.href !== "/adminrandinu/dashboard" && pathname.startsWith(`${item.href}/`));
             return (
-              <Link key={item.href} href={item.href} className={active ? "active" : ""} onClick={() => setOpen(false)}>
+              <Link key={item.href} href={item.href} className={`${active ? "active" : ""} ${feedback.pendingHref === item.href ? "is-pending" : ""}`} onClick={() => setOpen(false)}>
                 <NavIcon name={item.icon} />
                 <span>{item.label}</span>
               </Link>
@@ -46,7 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="workspace-topbar-title"><span>Randinu Jayaratne</span><strong>Smart ICT Administration</strong></div>
           <div className="workspace-user-actions"><WorkspaceThemeToggle /><div className="admin-owner-chip"><span className="workspace-avatar">RJ</span><div><strong>Randinu</strong><small>Administrator</small></div></div></div>
         </header>
-        <main className="workspace-content admin-content">{children}</main>
+        <main className="workspace-content admin-content" aria-busy={feedback.busy}>{children}</main>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { NavIcon } from "@/components/nav-icon";
 import { WorkspaceThemeToggle } from "@/components/workspace-theme-toggle";
+import { useWorkspaceFeedback } from "@/components/use-workspace-feedback";
 import { STUDENT_NAV } from "@/lib/config";
 import type { StudentProfile } from "@/lib/types";
 import { signOutAction } from "@/app/actions/auth";
@@ -15,9 +16,11 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const initials = `${student.firstName.charAt(0)}${student.lastName.charAt(0)}`.toUpperCase();
+  const feedback = useWorkspaceFeedback(pathname, children);
 
   return (
-    <div className="workspace-shell">
+    <div className={`workspace-shell ${feedback.busy ? "is-busy" : ""}`} onClickCapture={feedback.onClickCapture} onSubmitCapture={feedback.onSubmitCapture}>
+      {feedback.busy && <div className="workspace-progress" role="status" aria-label={feedback.pendingHref ? "Opening page" : "Saving changes"}><span /></div>}
       <aside className={`workspace-sidebar ${open ? "is-open" : ""}`}>
         <div className="sidebar-brand-row">
           <Logo href="/app/dashboard" compact />
@@ -28,7 +31,7 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
           {STUDENT_NAV.map((item) => {
             const active = pathname === item.href || (item.href !== "/app/dashboard" && pathname.startsWith(`${item.href}/`));
             return (
-              <Link key={item.href} href={item.href} className={active ? "active" : ""} onClick={() => setOpen(false)}>
+              <Link key={item.href} href={item.href} className={`${active ? "active" : ""} ${feedback.pendingHref === item.href ? "is-pending" : ""}`} onClick={() => setOpen(false)}>
                 <NavIcon name={item.icon} />
                 <span>{item.label}</span>
               </Link>
@@ -54,7 +57,7 @@ export function LmsShell({ children, student }: { children: React.ReactNode; stu
             </Link>
           </div>
         </header>
-        <main className="workspace-content">{children}</main>
+        <main className="workspace-content" aria-busy={feedback.busy}>{children}</main>
       </div>
     </div>
   );
