@@ -13,14 +13,13 @@ import type {
 
 export const demoPrograms: Program[] = [
   {
-    id: "program-2026-ol",
-    slug: "2026-ol",
-    name: "2026 O/L ICT",
-    shortName: "2026 O/L",
-    description:
-      "A focused ICT journey for students sitting the 2026 G.C.E. Ordinary Level examination, combining clear theory, structured revision and regular assessment.",
+    id: "program-theory",
+    slug: "theory",
+    name: "Theory",
+    shortName: "Theory",
+    description: "Complete ICT theory lessons with structured notes and steady syllabus coverage.",
     academicLevel: "O/L",
-    examYear: 2026,
+    examYear: null,
     medium: ["Sinhala", "English"],
     image: "/ol-theory-poster.jpg",
     isPublic: true,
@@ -28,14 +27,13 @@ export const demoPrograms: Program[] = [
     isActive: true,
   },
   {
-    id: "program-2027-ol",
-    slug: "2027-ol",
-    name: "2027 O/L ICT",
-    shortName: "2027 O/L",
-    description:
-      "A complete long-term ICT programme for students sitting the 2027 O/L examination, built around understanding, retention and exam-ready practice.",
+    id: "program-revision",
+    slug: "revision",
+    name: "Revision",
+    shortName: "Revision",
+    description: "Focused syllabus revision with targeted practice and regular assessment.",
     academicLevel: "O/L",
-    examYear: 2027,
+    examYear: null,
     medium: ["Sinhala", "English"],
     image: "/ol-theory-poster.jpg",
     isPublic: true,
@@ -43,14 +41,27 @@ export const demoPrograms: Program[] = [
     isActive: true,
   },
   {
-    id: "program-rapid-2026",
-    slug: "2026-ol-rapid-revision",
-    name: "2026 O/L Rapid Revision",
+    id: "program-paper",
+    slug: "paper",
+    name: "Paper",
+    shortName: "Paper",
+    description: "Past-paper practice, answering technique and detailed paper discussion.",
+    academicLevel: "O/L",
+    examYear: null,
+    medium: ["Sinhala", "English"],
+    image: "/ol-theory-poster.jpg",
+    isPublic: true,
+    registrationOpen: true,
+    isActive: true,
+  },
+  {
+    id: "program-rapid-revision",
+    slug: "rapid-revision",
+    name: "Rapid Revision",
     shortName: "Rapid Revision",
-    description:
-      "A fast, exam-oriented revision programme that revisits the syllabus, trains question-answering techniques and builds confidence through paper practice.",
+    description: "Fast, exam-oriented revision with intensive paper practice.",
     academicLevel: "O/L",
-    examYear: 2026,
+    examYear: null,
     medium: ["Sinhala", "English"],
     image: "/rapid-revision-poster.jpg",
     isPublic: true,
@@ -60,9 +71,14 @@ export const demoPrograms: Program[] = [
 ];
 
 export const demoBatches: Batch[] = [
-  { id: "batch-2026-main", programId: "program-2026-ol", name: "2026 O/L Main Batch", isActive: true },
-  { id: "batch-2027-main", programId: "program-2027-ol", name: "2027 O/L Main Batch", isActive: true },
-  { id: "batch-rapid-main", programId: "program-rapid-2026", name: "Rapid Revision Main Batch", isActive: true },
+  { id: "batch-theory-2026", programId: "program-theory", name: "2026 O/L", isActive: true },
+  { id: "batch-theory-2027", programId: "program-theory", name: "2027 O/L", isActive: true },
+  { id: "batch-revision-2026", programId: "program-revision", name: "2026 O/L", isActive: true },
+  { id: "batch-revision-2027", programId: "program-revision", name: "2027 O/L", isActive: true },
+  { id: "batch-paper-2026", programId: "program-paper", name: "2026 O/L", isActive: true },
+  { id: "batch-paper-2027", programId: "program-paper", name: "2027 O/L", isActive: true },
+  { id: "batch-rapid-2026", programId: "program-rapid-revision", name: "2026 O/L", isActive: true },
+  { id: "batch-rapid-2027", programId: "program-rapid-revision", name: "2027 O/L", isActive: true },
 ];
 
 export const demoStudent: StudentProfile = {
@@ -79,8 +95,8 @@ export const demoStudent: StudentProfile = {
   role: "student",
   accountStatus: "verified",
   createdAt: "2026-06-10T08:30:00.000Z",
-  programIds: ["program-2026-ol"],
-  batchIds: ["batch-2026-main"],
+  programIds: ["program-theory"],
+  batchIds: ["batch-theory-2026"],
 };
 
 export const demoStudents: StudentProfile[] = [
@@ -107,8 +123,8 @@ export const demoStudents: StudentProfile[] = [
     phone: "94775678901",
     medium: "Sinhala",
     accountStatus: "verified",
-    programIds: ["program-2027-ol"],
-    batchIds: ["batch-2027-main"],
+    programIds: ["program-theory"],
+    batchIds: ["batch-theory-2027"],
     school: "Minuwangoda Central College",
   },
 ];
@@ -124,7 +140,7 @@ export const demoResources: ResourceItem[] = [
     fileType: "PDF",
     access: "free",
     publishedAt: "2026-07-02T08:00:00.000Z",
-    programIds: ["program-2026-ol", "program-2027-ol"],
+    programIds: ["program-theory"],
     batchIds: [],
   },
   {
@@ -137,8 +153,8 @@ export const demoResources: ResourceItem[] = [
     fileType: "Tute",
     access: "paid",
     publishedAt: "2026-07-08T10:00:00.000Z",
-    programIds: ["program-2026-ol"],
-    batchIds: ["batch-2026-main"],
+    programIds: ["program-theory"],
+    batchIds: ["batch-theory-2026"],
   },
   {
     id: "resource-spreadsheet",
@@ -150,8 +166,8 @@ export const demoResources: ResourceItem[] = [
     fileType: "Worksheet",
     access: "paid",
     publishedAt: "2026-06-18T10:00:00.000Z",
-    programIds: ["program-2026-ol"],
-    batchIds: ["batch-2026-main"],
+    programIds: ["program-theory"],
+    batchIds: ["batch-theory-2026"],
   },
   {
     id: "resource-free-model",
@@ -189,7 +205,7 @@ export const demoAssessments: Assessment[] = [
     showResults: true,
     access: "free",
     totalMarks: 10,
-    programIds: ["program-2026-ol", "program-2027-ol"],
+    programIds: ["program-theory"],
     batchIds: [],
     studentIds: [],
     questions: [
@@ -351,8 +367,8 @@ export const demoAssessments: Assessment[] = [
     showResults: false,
     access: "paid",
     totalMarks: 40,
-    programIds: ["program-2026-ol"],
-    batchIds: ["batch-2026-main"],
+    programIds: ["program-theory"],
+    batchIds: ["batch-theory-2026"],
     studentIds: [],
     questions: [],
   },
@@ -376,7 +392,7 @@ export const demoAssessments: Assessment[] = [
     showResults: true,
     access: "paid",
     totalMarks: 100,
-    programIds: ["program-2026-ol"],
+    programIds: ["program-theory"],
     batchIds: [],
     studentIds: [],
     questions: [],
@@ -386,8 +402,8 @@ export const demoAssessments: Assessment[] = [
 export const demoModules: ModuleItem[] = [
   {
     id: "module-may-2026",
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     title: "May 2026",
     month: 5,
     year: 2026,
@@ -412,8 +428,8 @@ export const demoModules: ModuleItem[] = [
   },
   {
     id: "module-june-2026",
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     title: "June 2026",
     month: 6,
     year: 2026,
@@ -438,8 +454,8 @@ export const demoModules: ModuleItem[] = [
   },
   {
     id: "module-july-2026",
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     title: "July 2026",
     month: 7,
     year: 2026,
@@ -474,8 +490,8 @@ export const demoModules: ModuleItem[] = [
   },
   {
     id: "module-august-2026",
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     title: "August 2026",
     month: 8,
     year: 2026,
@@ -588,8 +604,8 @@ export const demoPayments: PaymentRecord[] = [
   {
     id: "payment-may",
     studentId: demoStudent.id,
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     billingMonth: "2026-05-01",
     amount: 2400,
     status: "paid",
@@ -598,8 +614,8 @@ export const demoPayments: PaymentRecord[] = [
   {
     id: "payment-june",
     studentId: demoStudent.id,
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     billingMonth: "2026-06-01",
     amount: 2400,
     status: "paid",
@@ -608,8 +624,8 @@ export const demoPayments: PaymentRecord[] = [
   {
     id: "payment-july",
     studentId: demoStudent.id,
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     billingMonth: "2026-07-01",
     amount: 2400,
     status: "paid",
@@ -618,8 +634,8 @@ export const demoPayments: PaymentRecord[] = [
   {
     id: "payment-august",
     studentId: demoStudent.id,
-    programId: "program-2026-ol",
-    batchId: "batch-2026-main",
+    programId: "program-theory",
+    batchId: "batch-theory-2026",
     billingMonth: "2026-08-01",
     amount: 2400,
     status: "unpaid",

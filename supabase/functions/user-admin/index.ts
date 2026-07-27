@@ -18,7 +18,7 @@ Deno.serve(async (request: Request) => {
   try { body = await request.json(); } catch { return respond({ error: "Invalid request." }, 400); }
 
   if (body.operation === "register_student") {
-    if (!validPhone(body.phone) || !validId(body.programId) || typeof body.password !== "string" || body.password.length < 8 || typeof body.metadata !== "object" || !body.metadata) {
+    if (!validPhone(body.phone) || !validId(body.programId) || !validId(body.batchId) || typeof body.password !== "string" || body.password.length < 8 || typeof body.metadata !== "object" || !body.metadata) {
       return respond({ error: "Invalid registration details." }, 400);
     }
     const metadata = body.metadata as Record<string, unknown>;
@@ -27,9 +27,11 @@ Deno.serve(async (request: Request) => {
     if (!['Sinhala', 'English'].includes(String(metadata.medium))) return respond({ error: "Invalid medium." }, 400);
     const { data: program } = await service.from("programs").select("id").eq("id", body.programId).eq("is_active", true).eq("registration_open", true).maybeSingle();
     if (!program) return respond({ error: "That program is not open for registration." }, 400);
+    const { data: batch } = await service.from("batches").select("id").eq("id", body.batchId).eq("program_id", body.programId).eq("is_active", true).maybeSingle();
+    if (!batch) return respond({ error: "That class is not open for registration." }, 400);
     const { data, error } = await service.auth.admin.createUser({
       email: `${body.phone}@students.smartict.lk`, password: body.password, email_confirm: true,
-      user_metadata: { ...metadata, requested_program_id: body.programId, contact_number: body.phone, registration_source: "public_lms" },
+      user_metadata: { ...metadata, requested_program_id: body.programId, requested_batch_id: body.batchId, contact_number: body.phone, registration_source: "public_lms" },
     });
     if (error || !data.user) {
       const duplicate = /already|registered|exists/i.test(error?.message || "");

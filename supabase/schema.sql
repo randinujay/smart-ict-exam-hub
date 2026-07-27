@@ -31,6 +31,7 @@ create table public.profiles (
   role public.user_role not null default 'student',
   account_status public.account_status not null default 'pending',
   requested_program_id uuid,
+  requested_batch_id uuid,
   requested_program_status text not null default 'none' check (requested_program_status in ('none','pending','approved','rejected')),
   requested_program_reviewed_at timestamptz,
   requested_program_reviewed_by uuid references public.profiles(id) on delete set null,
@@ -73,12 +74,14 @@ create table public.batches (
   unique(program_id,name),
   unique(id,program_id)
 );
+alter table public.profiles add constraint profiles_requested_class_fkey foreign key(requested_batch_id,requested_program_id) references public.batches(id,program_id) on delete set null;
+create index profiles_requested_batch_id_idx on public.profiles(requested_batch_id);
 
 create table public.enrollments (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.profiles(id) on delete cascade,
   program_id uuid not null references public.programs(id) on delete cascade,
-  batch_id uuid,
+  batch_id uuid not null,
   status text not null default 'active' check (status in ('active','inactive','completed')),
   enrolled_at timestamptz not null default now(),
   foreign key(batch_id,program_id) references public.batches(id,program_id) on delete restrict
@@ -88,7 +91,7 @@ create unique index enrollments_unique_scope on public.enrollments (student_id,p
 create table public.modules (
   id uuid primary key default gen_random_uuid(),
   program_id uuid not null references public.programs(id) on delete cascade,
-  batch_id uuid,
+  batch_id uuid not null,
   title text not null,
   month integer not null check (month between 1 and 12),
   year integer not null check (year between 2020 and 2200),
@@ -271,7 +274,7 @@ create table public.payments (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.profiles(id) on delete cascade,
   program_id uuid not null references public.programs(id) on delete cascade,
-  batch_id uuid,
+  batch_id uuid not null,
   billing_month date not null check (extract(day from billing_month)=1),
   amount numeric(10,2) not null default 0 check (amount >= 0),
   status public.payment_status not null default 'unpaid',
@@ -412,17 +415,23 @@ create trigger support_updated before update on public.support_requests for each
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path='' as $$
-declare requested_program uuid;
+declare requested_program uuid; requested_batch uuid;
 begin
   begin
     requested_program := nullif(new.raw_user_meta_data->>'requested_program_id','')::uuid;
+    requested_batch := nullif(new.raw_user_meta_data->>'requested_batch_id','')::uuid;
   exception when invalid_text_representation then
     requested_program := null;
+    requested_batch := null;
   end;
-  if requested_program is not null and not exists(select 1 from public.programs where id=requested_program and is_active and registration_open) then
+  if requested_program is null or requested_batch is null or not exists(
+    select 1 from public.programs p join public.batches b on b.program_id=p.id
+    where p.id=requested_program and b.id=requested_batch and p.is_active and p.registration_open and b.is_active
+  ) then
     requested_program := null;
+    requested_batch := null;
   end if;
-  insert into public.profiles(id,first_name,last_name,date_of_birth,nic,contact_number,address,school,medium,role,account_status,requested_program_id,requested_program_status)
+  insert into public.profiles(id,first_name,last_name,date_of_birth,nic,contact_number,address,school,medium,role,account_status,requested_program_id,requested_batch_id,requested_program_status)
   values(
     new.id,
     coalesce(nullif(new.raw_user_meta_data->>'first_name',''),'New'),
@@ -436,6 +445,7 @@ begin
     'student'::public.user_role,
     'pending'::public.account_status,
     requested_program,
+    requested_batch,
     case when requested_program is null then 'none' else 'pending' end
   );
   return new;
@@ -639,6 +649,7 @@ returns jsonb language sql stable security definer set search_path='' as $$
     'accountStatus',p.account_status,
     'createdAt',p.created_at,
     'requestedProgramId',p.requested_program_id,
+    'requestedBatchId',p.requested_batch_id,
     'requestedProgramStatus',p.requested_program_status,
     'programIds',coalesce((select jsonb_agg(distinct e.program_id) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb),
     'batchIds',coalesce((select jsonb_agg(distinct e.batch_id) filter (where e.batch_id is not null) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb)
@@ -846,7 +857,7 @@ begin
       'id',p.id,'firstName',p.first_name,'lastName',p.last_name,'fullName',concat_ws(' ',p.first_name,p.last_name),
       'phone',p.contact_number,'dateOfBirth',p.date_of_birth,'nic',p.nic,'address',p.address,'school',p.school,
       'medium',p.medium,'role',p.role,'accountStatus',p.account_status,'createdAt',p.created_at,
-      'requestedProgramId',p.requested_program_id,'requestedProgramStatus',p.requested_program_status,
+      'requestedProgramId',p.requested_program_id,'requestedBatchId',p.requested_batch_id,'requestedProgramStatus',p.requested_program_status,
       'programIds',coalesce((select jsonb_agg(distinct e.program_id) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb),
       'batchIds',coalesce((select jsonb_agg(distinct e.batch_id) filter (where e.batch_id is not null) from public.enrollments e where e.student_id=p.id and e.status='active'),'[]'::jsonb)
     ) order by p.created_at desc) from public.profiles p where p.role='student'),'[]'::jsonb),
@@ -1105,6 +1116,12 @@ create policy profiles_admin_update on public.profiles for update to authenticat
 create policy programs_anon_read on public.programs for select to anon using (is_public);
 create policy programs_authenticated_read on public.programs for select to authenticated using (is_public or public.is_admin());
 create policy programs_admin_all on public.programs for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy batches_anon_read on public.batches for select to anon using (
+  is_active and exists(
+    select 1 from public.programs p
+    where p.id=batches.program_id and p.is_public and p.is_active and p.registration_open
+  )
+);
 create policy batches_authenticated_read on public.batches for select to authenticated using (is_active or public.is_admin());
 create policy batches_admin_all on public.batches for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy enrollments_own_read on public.enrollments for select to authenticated using (student_id=(select auth.uid()) or public.is_admin());
@@ -1268,7 +1285,7 @@ revoke execute on all functions in schema public from public,anon,authenticated;
 
 grant usage on schema public to anon,authenticated,service_role;
 
-grant select on public.programs,public.testimonials,public.site_content to anon;
+grant select on public.programs,public.batches,public.testimonials,public.site_content to anon;
 grant insert on public.support_requests to anon;
 
 grant select on
@@ -1540,12 +1557,12 @@ begin
     return true;
   end if;
   if p_program_id is null or not exists(select 1 from public.programs where id=p_program_id and is_active) then raise exception 'Select an active program'; end if;
-  if p_batch_id is not null and not exists(select 1 from public.batches where id=p_batch_id and program_id=p_program_id and is_active) then raise exception 'Select a batch from the chosen program'; end if;
+  if p_batch_id is null or not exists(select 1 from public.batches where id=p_batch_id and program_id=p_program_id and is_active) then raise exception 'Select a batch from the chosen program'; end if;
   insert into public.enrollments(student_id,program_id,batch_id,status) values(p_student_id,p_program_id,p_batch_id,'active')
   on conflict(student_id,program_id,batch_id) do update set status='active';
-  update public.profiles set requested_program_id=p_program_id,requested_program_status='approved',requested_program_reviewed_at=now(),requested_program_reviewed_by=auth.uid(),account_status='verified',verified_at=now()
+  update public.profiles set requested_program_id=p_program_id,requested_batch_id=p_batch_id,requested_program_status='approved',requested_program_reviewed_at=now(),requested_program_reviewed_by=auth.uid(),account_status='verified',verified_at=now()
   where id=p_student_id and role='student';
-  update public.support_requests set status='resolved',admin_notes='Program request approved.'
+  update public.support_requests set status='resolved',admin_notes='Class request approved.'
   where student_id=p_student_id and request_type='account_verification' and status in ('open','in_progress');
   return true;
 end $$;

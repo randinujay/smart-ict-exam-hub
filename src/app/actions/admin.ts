@@ -42,6 +42,23 @@ function requireWebUrl(input: string, label: string, allowLocalPath = false) {
   }
 }
 
+type AdminClient = NonNullable<Awaited<ReturnType<typeof requireAdmin>>>;
+
+async function requireClassSelection(supabase: AdminClient, formData: FormData) {
+  const programId = value(formData, "programId");
+  const batchId = value(formData, "batchId");
+  if (!programId || !batchId) throw new Error("Select a program and batch.");
+  const { data, error } = await supabase
+    .from("batches")
+    .select("id")
+    .eq("id", batchId)
+    .eq("program_id", programId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error || !data) throw new Error("Select a batch from the chosen program.");
+  return { programId, batchId };
+}
+
 export async function changeAdminPasswordAction(formData: FormData) {
   const supabase = await requireAdmin();
   if (!supabase) return;
@@ -98,12 +115,13 @@ export async function createBatchAction(formData: FormData) {
 
 export async function createModuleAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
+  const { programId, batchId } = await requireClassSelection(supabase, formData);
   const month = Number(value(formData,"month")); const year = Number(value(formData,"year"));
   if(!Number.isInteger(month)||month<1||month>12||!Number.isInteger(year)||year<2020||year>2200)throw new Error("Select a valid module month and year.");
   const access=requireChoice(value(formData,"access"),["free","paid"],"access type");
   const status=requireChoice(value(formData,"status"),["draft","published","upcoming","archived"],"module status");
   const { error } = await supabase.from("modules").insert({
-    program_id: value(formData,"programId"), batch_id: value(formData,"batchId") || null,
+    program_id: programId, batch_id: batchId,
     title: value(formData,"title") || new Intl.DateTimeFormat("en",{month:"long",year:"numeric"}).format(new Date(year,month-1,1)),
     month, year, access_type: access, status,
     opens_at: colomboLocalToIso(value(formData,"opensAt")), closes_at: colomboLocalToIso(value(formData,"closesAt")),
@@ -129,7 +147,7 @@ export async function updateStudentStatusAction(formData: FormData) {
 
 export async function assignStudentAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
-  const studentId=value(formData,"studentId"); const programId=value(formData,"programId"); const batchId=value(formData,"batchId")||null;
+  const studentId=value(formData,"studentId"); const { programId, batchId } = await requireClassSelection(supabase, formData);
   const { error }=await supabase.from("enrollments").upsert({student_id:studentId,program_id:programId,batch_id:batchId,status:"active"},{onConflict:"student_id,program_id,batch_id"});
   if(error) throw new Error(error.message); revalidatePath("/adminrandinu/students");
 }
@@ -140,7 +158,7 @@ export async function reviewStudentProgramRequestAction(formData: FormData) {
   const decision = requireChoice(value(formData, "decision"), ["approve", "reject"], "review decision");
   const programId = value(formData, "programId") || null;
   const batchId = value(formData, "batchId") || null;
-  if (decision === "approve" && !programId) throw new Error("Select a program before approval.");
+  if (decision === "approve") await requireClassSelection(supabase, formData);
   const { error } = await supabase.rpc("review_student_program_request", {
     p_student_id: studentId,
     p_decision: decision,
@@ -157,13 +175,14 @@ export async function reviewStudentProgramRequestAction(formData: FormData) {
 
 export async function markPaymentAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
+  const { programId, batchId } = await requireClassSelection(supabase, formData);
   const billingMonth=value(formData,"billingMonth");const amount=Number(value(formData,"amount")||0);
   const status=requireChoice(value(formData,"status"),["paid","unpaid","waived"],"payment status");
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(billingMonth)||!Number.isFinite(amount)||amount<0)throw new Error("Enter a valid billing month and amount.");
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)redirect("/adminrandinu");
   const { error }=await supabase.from("payments").upsert({
-    student_id:value(formData,"studentId"), program_id:value(formData,"programId"), batch_id:value(formData,"batchId")||null,
+    student_id:value(formData,"studentId"), program_id:programId, batch_id:batchId,
     billing_month:`${billingMonth}-01`, amount, status,
     paid_at:status==="paid"?new Date().toISOString():null, notes:value(formData,"notes")||null, recorded_by:user.id,
   },{onConflict:"student_id,program_id,batch_id,billing_month"});
@@ -309,10 +328,11 @@ export async function deleteBatchAction(formData: FormData) {
 
 export async function updateModuleAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
+  const { programId, batchId } = await requireClassSelection(supabase, formData);
   const month = Number(value(formData, "month")); const year = Number(value(formData, "year"));
   if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) throw new Error("Select a valid month and year.");
   const { error } = await supabase.from("modules").update({
-    program_id: value(formData, "programId"), batch_id: value(formData, "batchId") || null,
+    program_id: programId, batch_id: batchId,
     title: value(formData, "title"), month, year,
     access_type: requireChoice(value(formData, "access"), ["free", "paid"], "access type"),
     status: requireChoice(value(formData, "status"), ["draft", "published", "upcoming", "archived"], "module status"),
@@ -385,11 +405,12 @@ export async function deleteResourceAction(formData: FormData) {
 
 export async function updatePaymentAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
+  const { programId, batchId } = await requireClassSelection(supabase, formData);
   const billingMonth = value(formData, "billingMonth"); const amount = Number(value(formData, "amount") || 0);
   const status = requireChoice(value(formData, "status"), ["paid", "unpaid", "waived"], "payment status");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(billingMonth) || !Number.isFinite(amount) || amount < 0) throw new Error("Enter a valid month and amount.");
   const { error } = await supabase.from("payments").update({
-    program_id: value(formData, "programId"), batch_id: value(formData, "batchId") || null,
+    program_id: programId, batch_id: batchId,
     billing_month: `${billingMonth}-01`, amount, status, paid_at: status === "paid" ? new Date().toISOString() : null,
     notes: value(formData, "notes") || null,
   }).eq("id", value(formData, "paymentId"));

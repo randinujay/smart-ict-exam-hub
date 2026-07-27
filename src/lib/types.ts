@@ -45,6 +45,7 @@ export interface StudentProfile {
   role: "student" | "admin";
   accountStatus: AccountStatus;
   requestedProgramId?: string | null;
+  requestedBatchId?: string | null;
   requestedProgramStatus?: "none" | "pending" | "approved" | "rejected";
   createdAt: string;
   programIds: string[];

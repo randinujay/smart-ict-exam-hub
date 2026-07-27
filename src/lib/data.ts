@@ -62,6 +62,28 @@ export const getPublicPrograms = cache(async (): Promise<Program[]> => {
   return data.map((row) => mapProgram(row));
 });
 
+export const getPublicBatches = cache(async (): Promise<Batch[]> => {
+  if (isDemoMode()) return demoBatches.filter((batch) => batch.isActive);
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("batches")
+    .select("id,program_id,name,description,is_active")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+  if (error || !data) {
+    console.error("public batches query failed", error);
+    return [];
+  }
+  return data.map((row) => ({
+    id: row.id,
+    programId: row.program_id,
+    name: row.name,
+    description: row.description ?? undefined,
+    isActive: row.is_active,
+  }));
+});
+
 export const getProgramBySlug = cache(async (slug: string): Promise<Program | null> => {
   const programs = await getPublicPrograms();
   return programs.find((program) => program.slug === slug) ?? null;

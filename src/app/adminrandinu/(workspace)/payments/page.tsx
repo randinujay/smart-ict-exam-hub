@@ -1,6 +1,7 @@
 import { BadgeDollarSign, Pencil, Save, Trash2 } from "lucide-react";
 import { deletePaymentAction, markPaymentAction, updatePaymentAction } from "@/app/actions/admin";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { ClassSelectFields } from "@/components/class-select-fields";
 import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/status-badge";
 import { displayPhone } from "@/lib/auth";
@@ -12,8 +13,7 @@ export default async function AdminPaymentsPage() {
     <PageHeading eyebrow="MONTHLY ACCESS" title="Payments" />
     <details className="admin-create-panel"><summary><BadgeDollarSign size={17} />Record payment</summary><form action={markPaymentAction} className="admin-form-grid">
       <label className="field"><span>Student</span><select name="studentId" required>{data.students.map((student) => <option key={student.id} value={student.id}>{student.fullName} - {displayPhone(student.phone)}</option>)}</select></label>
-      <label className="field"><span>Program</span><select name="programId" required>{data.programs.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select></label>
-      <label className="field"><span>Batch</span><select name="batchId" defaultValue=""><option value="">No batch</option>{data.batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></label>
+      <ClassSelectFields programs={data.programs} batches={data.batches} />
       <label className="field"><span>Month</span><input name="billingMonth" type="month" required defaultValue={new Date().toISOString().slice(0, 7)} /></label>
       <label className="field"><span>Amount (LKR)</span><input name="amount" type="number" min="0" defaultValue="0" required /></label>
       <label className="field"><span>Status</span><select name="status" defaultValue="paid"><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="waived">Waived</option></select></label>
@@ -26,8 +26,7 @@ export default async function AdminPaymentsPage() {
         <td>{new Date(payment.billingMonth).toLocaleDateString("en-LK", { month: "long", year: "numeric" })}</td><td>{program?.shortName}</td><td>LKR {payment.amount.toLocaleString()}</td><td><StatusBadge tone={payment.status === "paid" || payment.status === "waived" ? "success" : "warning"}>{payment.status}</StatusBadge></td>
         <td><div className="table-actions"><details className="inline-editor"><summary><Pencil size={15} />Edit</summary><form action={updatePaymentAction} className="admin-form-grid compact-form">
           <input type="hidden" name="paymentId" value={payment.id} />
-          <label className="field"><span>Program</span><select name="programId" defaultValue={payment.programId}>{data.programs.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label className="field"><span>Batch</span><select name="batchId" defaultValue={payment.batchId ?? ""}><option value="">No batch</option>{data.batches.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <ClassSelectFields programs={data.programs} batches={data.batches} defaultProgramId={payment.programId} defaultBatchId={payment.batchId ?? ""} />
           <label className="field"><span>Month</span><input name="billingMonth" type="month" defaultValue={payment.billingMonth.slice(0, 7)} required /></label>
           <label className="field"><span>Amount</span><input name="amount" type="number" min="0" defaultValue={payment.amount} required /></label>
           <label className="field"><span>Status</span><select name="status" defaultValue={payment.status}><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="waived">Waived</option></select></label>

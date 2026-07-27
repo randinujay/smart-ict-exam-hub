@@ -1,6 +1,7 @@
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { createModuleAction, deleteModuleAction, updateModuleAction } from "@/app/actions/admin";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { ClassSelectFields } from "@/components/class-select-fields";
 import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/status-badge";
 import { monthName } from "@/lib/config";
@@ -15,8 +16,7 @@ function localInput(value?: string | null) {
 function ModuleFields({ data, module }: { data: Awaited<ReturnType<typeof getAdminData>>; module?: Awaited<ReturnType<typeof getAdminData>>["modules"][number] }) {
   return <>
     {module && <input type="hidden" name="moduleId" value={module.id} />}
-    <label className="field"><span>Program</span><select name="programId" required defaultValue={module?.programId}>{data.programs.map((program) => <option key={program.id} value={program.id}>{program.name}</option>)}</select></label>
-    <label className="field"><span>Batch</span><select name="batchId" defaultValue={module?.batchId ?? ""}><option value="">All batches</option>{data.batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</select></label>
+    <ClassSelectFields programs={data.programs} batches={data.batches} defaultProgramId={module?.programId} defaultBatchId={module?.batchId ?? ""} />
     <label className="field"><span>Month</span><select name="month" defaultValue={module?.month ?? new Date().getMonth() + 1}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{monthName(index + 1)}</option>)}</select></label>
     <label className="field"><span>Year</span><input name="year" type="number" min="2026" defaultValue={module?.year ?? 2026} required /></label>
     <label className="field full"><span>Title</span><input name="title" defaultValue={module?.title} required={Boolean(module)} /></label>
@@ -36,7 +36,7 @@ export default async function AdminModulesPage() {
       {data.modules.map((module) => <tr key={module.id}>
         <td><div className="table-title-cell"><strong>{module.title}</strong><span>{monthName(module.month)} {module.year}</span></div></td>
         <td>{data.programs.find((program) => program.id === module.programId)?.shortName}</td>
-        <td>{data.batches.find((batch) => batch.id === module.batchId)?.name || "All batches"}</td>
+        <td>{data.batches.find((batch) => batch.id === module.batchId)?.name || "Unassigned"}</td>
         <td>{module.recordings.length} videos / {module.resources.length} files / {module.assessmentIds.length} tests</td>
         <td><StatusBadge tone={module.access === "free" ? "success" : "brand"}>{module.access}</StatusBadge></td>
         <td><StatusBadge tone={module.status === "published" ? "success" : module.status === "upcoming" ? "warning" : "neutral"}>{module.status}</StatusBadge></td>
