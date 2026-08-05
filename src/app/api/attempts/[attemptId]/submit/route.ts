@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/server/api-auth";
+export async function POST(request:Request,{params}:{params:Promise<{attemptId:string}>}){const auth=await requireApiUser();if("error" in auth)return auth.error;const{attemptId}=await params;try{const body=await request.json();const{data,error}=await auth.supabase.rpc("submit_assessment_attempt",{p_attempt_id:attemptId,p_answers:body.answers||{},p_flagged:body.flagged||[],p_auto_submitted:Boolean(body.autoSubmitted)});if(error)throw error;return NextResponse.json({resultId:data})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Could not submit assessment."},{status:400})}}

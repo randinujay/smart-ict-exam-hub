@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Mail, MapPin, MessageCircle, PhoneCall } from "lucide-react";
+import { PublicLayout } from "@/components/public-layout";
+import { BRAND } from "@/lib/config";
+
+export const metadata: Metadata = { title: "Contact", description: "Contact Randinu Jayaratne | Smart ICT." };
+export default function ContactPage() { return <PublicLayout><main className="public-page inner-public-page"><section className="inner-hero"><div className="site-shell"><span className="section-kicker">CONTACT SMART ICT</span><h1>Questions about classes or the LMS?</h1><p>Use WhatsApp for the quickest response, or open a support request after signing in.</p></div></section><section className="section"><div className="site-shell contact-page-grid"><div className="contact-methods"><a href={BRAND.socials.whatsapp} target="_blank" rel="noreferrer"><MessageCircle /><div><strong>WhatsApp</strong><span>{BRAND.phoneDisplay}</span></div></a><a href={`tel:+${BRAND.phoneInternational}`}><PhoneCall /><div><strong>Call</strong><span>{BRAND.phoneDisplay}</span></div></a><a href={`mailto:${BRAND.email}`}><Mail /><div><strong>Email</strong><span>{BRAND.email}</span></div></a><div><MapPin /><div><strong>Location</strong><span>{BRAND.location}</span></div></div></div><div className="contact-card"><span className="section-kicker">STUDENT SUPPORT</span><h2>Already registered?</h2><p>Sign in and use the Support section so your account and access status can be reviewed accurately.</p><Link href="/login" className="button button-primary">Open LMS Support</Link></div></div></section></main></PublicLayout>; }

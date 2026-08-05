@@ -1,0 +1,6 @@
+type,prompt,marks,option_a,option_b,option_c,option_d,correct_answer,explanation,image_url
+single_choice,"Which device stores data permanently?",1,RAM,ROM,Cache,Register,B,"ROM retains data without power.",
+multiple_choice,"Select two input devices.",2,Keyboard,Monitor,Mouse,Printer,A|C,"Keyboard and mouse are input devices.",
+true_false,"A byte contains eight bits.",1,,,,,True,"One byte equals eight bits.",
+short_answer,"What does CPU stand for?",1,,,,,"Central Processing Unit",,
+structured,"Explain two benefits of computer networks.",4,,,,,,"Award two marks for each valid explained benefit.",
