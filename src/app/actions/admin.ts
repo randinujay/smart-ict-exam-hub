@@ -18,6 +18,16 @@ async function requireAdmin() {
   return supabase;
 }
 
+async function countReferences(
+  supabase: NonNullable<Awaited<ReturnType<typeof requireAdmin>>>,
+  table: string,
+  column: string,
+  matchValue: string,
+) {
+  const { count } = await supabase.from(table).select("id", { count: "exact", head: true }).eq(column, matchValue);
+  return count ?? 0;
+}
+
 function value(formData: FormData, key: string) { return String(formData.get(key) ?? "").trim(); }
 function bool(formData: FormData, key: string) { return formData.get(key) === "on" || formData.get(key) === "true"; }
 function colomboLocalToIso(input: string) {
@@ -346,15 +356,47 @@ export async function updateAcademicBatchAction(formData: FormData) {
 
 export async function deleteAcademicBatchAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
-  const { error } = await supabase.from("academic_batches").delete().eq("id", value(formData, "academicBatchId"));
-  if (error) throw new Error(`This batch still has classes. Remove those classes first. ${error.message}`);
+  const academicBatchId = value(formData, "academicBatchId");
+
+  const classCount = await countReferences(supabase, "batches", "academic_batch_id", academicBatchId);
+  if (classCount > 0) {
+    redirect(`/adminrandinu/batches?error=${encodeURIComponent(
+      `Cannot delete this batch: it still has ${classCount} ${classCount === 1 ? "class" : "classes"} under it. Remove or reassign ${classCount === 1 ? "it" : "them"} first.`,
+    )}`);
+  }
+
+  const { error } = await supabase.from("academic_batches").delete().eq("id", academicBatchId);
+  if (error) {
+    console.error("deleteAcademicBatchAction failed", error);
+    redirect(`/adminrandinu/batches?error=${encodeURIComponent("This batch could not be deleted. It may still be referenced elsewhere.")}`);
+  }
   revalidatePath("/adminrandinu/batches"); revalidatePath("/register");
 }
 
 export async function deleteBatchAction(formData: FormData) {
   const supabase = await requireAdmin(); if (!supabase) return;
-  const { error } = await supabase.from("batches").delete().eq("id", value(formData, "batchId"));
-  if (error) throw new Error(`This batch is still in use. Remove its assignments and modules first. ${error.message}`);
+  const batchId = value(formData, "batchId");
+
+  const [enrollmentCount, moduleCount, paymentCount] = await Promise.all([
+    countReferences(supabase, "enrollments", "batch_id", batchId),
+    countReferences(supabase, "modules", "batch_id", batchId),
+    countReferences(supabase, "payments", "batch_id", batchId),
+  ]);
+  const blockers: string[] = [];
+  if (enrollmentCount > 0) blockers.push(`${enrollmentCount} enrolled student${enrollmentCount === 1 ? "" : "s"}`);
+  if (moduleCount > 0) blockers.push(`${moduleCount} module${moduleCount === 1 ? "" : "s"}`);
+  if (paymentCount > 0) blockers.push(`${paymentCount} payment record${paymentCount === 1 ? "" : "s"}`);
+  if (blockers.length) {
+    redirect(`/adminrandinu/batches?error=${encodeURIComponent(
+      `Cannot delete this class: it still has ${blockers.join(", ")}. Remove or reassign these first.`,
+    )}`);
+  }
+
+  const { error } = await supabase.from("batches").delete().eq("id", batchId);
+  if (error) {
+    console.error("deleteBatchAction failed", error);
+    redirect(`/adminrandinu/batches?error=${encodeURIComponent("This class could not be deleted. It may still be in use.")}`);
+  }
   revalidatePath("/adminrandinu/batches");
 }
 

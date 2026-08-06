@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { isDemoMode, isSupabaseConfigured } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 import { isValidSriLankanMobile, normalizeSriLankanPhone, studentEmailAlias } from "@/lib/auth";
+import { dateOfBirthBounds, isValidDateOfBirth } from "@/lib/student-age";
+import { resolveOpaqueId } from "@/lib/opaque-id";
+import { getOpenRegistrationOptions } from "@/lib/registration-options";
 import { createClient } from "@/lib/supabase/server";
 import { callUserAdminFunction } from "@/lib/server/user-admin";
 
@@ -45,16 +48,18 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   const fieldErrors: Record<string, string> = {};
   if (firstName.length < 2) fieldErrors.firstName = "Enter the first name.";
   if (lastName.length < 2) fieldErrors.lastName = "Enter the last name.";
-  const birthDate = dateOfBirth ? new Date(`${dateOfBirth}T00:00:00+05:30`) : null;
-  if (!birthDate || Number.isNaN(birthDate.getTime()) || birthDate >= new Date()) fieldErrors.dateOfBirth = "Select a valid date of birth.";
+  if (!isValidDateOfBirth(dateOfBirth)) {
+    const bounds = dateOfBirthBounds();
+    fieldErrors.dateOfBirth = `Enter a date of birth between ${bounds.min} and ${bounds.max}.`;
+  }
   if (nic && !/^(\d{9}[VXvx]|\d{12})$/.test(nic)) fieldErrors.nic = "Enter a valid NIC or leave it blank.";
   if (!isValidSriLankanMobile(phone)) fieldErrors.phone = "Use a valid 10-digit Sri Lankan mobile number.";
   if (address.length < 5) fieldErrors.address = "Enter the address.";
   if (school.length < 2) fieldErrors.school = "Enter the school.";
   if (!['Sinhala', 'English'].includes(medium)) fieldErrors.medium = "Select the medium.";
-  if (!/^[0-9a-f-]{36}$/i.test(academicBatchId)) fieldErrors.academicBatchId = "Select a batch.";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(programId)) fieldErrors.programId = "Select a program.";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(batchId)) fieldErrors.batchId = "Select a batch.";
+  if (!academicBatchId) fieldErrors.academicBatchId = "Select a batch.";
+  if (!programId) fieldErrors.programId = "Select a program.";
+  if (!batchId) fieldErrors.batchId = "Select a batch.";
   if (password.length < 8) fieldErrors.password = "Use at least 8 characters.";
   if (password !== confirmPassword) fieldErrors.confirmPassword = "Passwords do not match.";
   if (Object.keys(fieldErrors).length) return { ok: false, message: "Check the highlighted details.", fieldErrors, values };
@@ -62,30 +67,45 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
   if (isDemoMode()) redirect("/app/dashboard?demo=1&registered=1");
   if (!isSupabaseConfigured()) return { ok: false, message: "Registration is temporarily unavailable. Please contact Smart ICT.", values };
 
+  // The form submits opaque codes, not raw database IDs (see lib/opaque-id.ts) —
+  // resolve them back against the same options a visitor could actually see on
+  // /register right now, so a stale or tampered code fails cleanly instead of
+  // silently mapping to the wrong program/class.
+  const { programs: openPrograms, classes: openClasses } = await getOpenRegistrationOptions();
+  const requestedProgram = resolveOpaqueId(openPrograms, programId);
+  if (!requestedProgram) {
+    return { ok: false, message: "That program is not open for registration.", fieldErrors: { programId: "Choose an open program." }, values };
+  }
+  const requestedBatch = resolveOpaqueId(openClasses, batchId);
+  if (!requestedBatch || requestedBatch.programId !== requestedProgram.id) {
+    return { ok: false, message: "That class is not open for registration.", fieldErrors: { batchId: "Choose a valid program for this batch." }, values };
+  }
+
   const normalizedPhone = normalizeSriLankanPhone(phone);
   const alias = studentEmailAlias(normalizedPhone);
   const supabase = await createClient();
-  const { data: requestedProgram, error: programError } = await supabase
+  // Re-check freshness at submit time (registration could have closed between
+  // page load and submit) using the real, resolved IDs.
+  const { data: freshProgram, error: programError } = await supabase
     .from("programs")
     .select("id,name")
-    .eq("id", programId)
+    .eq("id", requestedProgram.id)
     .eq("is_active", true)
     .eq("registration_open", true)
     .maybeSingle();
-  if (programError || !requestedProgram) {
+  if (programError || !freshProgram) {
     return { ok: false, message: "That program is not open for registration.", fieldErrors: { programId: "Choose an open program." }, values };
   }
-  const { data: requestedBatch, error: batchError } = await supabase
+  const { data: freshBatch, error: batchError } = await supabase
     .from("batches")
     .select("id,name,academic_batches!inner(id)")
-    .eq("id", batchId)
-    .eq("program_id", programId)
-    .eq("academic_batch_id", academicBatchId)
+    .eq("id", requestedBatch.id)
+    .eq("program_id", requestedProgram.id)
     .eq("is_active", true)
     .eq("registration_open", true)
     .eq("academic_batches.is_active", true)
     .maybeSingle();
-  if (batchError || !requestedBatch) {
+  if (batchError || !freshBatch) {
     return { ok: false, message: "That class is not open for registration.", fieldErrors: { batchId: "Choose a valid program for this batch." }, values };
   }
 
@@ -94,8 +114,8 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
     const created = await callUserAdminFunction<{ userId: string }>("register_student", {
       phone: normalizedPhone,
       password,
-      programId,
-      batchId,
+      programId: requestedProgram.id,
+      batchId: requestedBatch.id,
       metadata: {
         first_name: firstName,
         last_name: lastName,
@@ -105,8 +125,8 @@ export async function registerStudentAction(_: ActionState, formData: FormData):
         address,
         school,
         medium,
-        requested_program_id: programId,
-        requested_batch_id: batchId,
+        requested_program_id: requestedProgram.id,
+        requested_batch_id: requestedBatch.id,
       },
     });
     createdUserId = created.userId;

@@ -12,12 +12,14 @@ import { PageHeading } from "@/components/page-heading";
 import { StatusBadge } from "@/components/status-badge";
 import { getAdminData } from "@/lib/data";
 
-export default async function AdminBatchesPage() {
+export default async function AdminBatchesPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const data = await getAdminData();
   const programs = data.programs.filter((item) => item.isActive);
+  const { error } = await searchParams;
 
   return <div>
     <PageHeading eyebrow="CLASS STRUCTURE" title="Batches & Classes" />
+    {error && <p className="form-message error" role="alert">{error}</p>}
     <div className="admin-two-column">
       <details className="admin-create-panel"><summary><Plus size={17} />Add batch</summary><form action={createAcademicBatchAction} className="admin-form-grid">
         <label className="field"><span>Exam year</span><input name="examYear" type="number" min="2026" max="2200" required /></label>

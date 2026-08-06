@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { PublicLayout } from "@/components/public-layout";
+import { BRAND } from "@/lib/config";
 
 export const metadata: Metadata = { title: "FAQ", description: "Frequently asked questions about Smart ICT and the LMS." };
 const faqs = [
   ["Who can create a Smart ICT LMS account?", "Any student can register using a valid Sri Lankan mobile number and password. Free resources can be accessed after registration."],
   ["Why does my account show as pending?", "Every new account is reviewed manually. Pending users can still use free content, but paid and exclusive content remains locked until verification."],
+  ["How much do Smart ICT classes cost?", `Class fees depend on the program and batch. Message Smart ICT on WhatsApp at ${BRAND.phoneDisplay} for the current monthly fee before you register - a member of the team will confirm pricing and payment details for your program.`],
   ["How do paid monthly modules unlock?", "Send the payment receipt through WhatsApp. Once the administrator marks the relevant month as paid, content for your program and batch becomes available."],
   ["Are Sinhala and English Medium supported?", "Yes. Programs, resources and assessments can be prepared for Sinhala Medium, English Medium or both."],
   ["Can one quiz be shared with multiple programs?", "Yes. An assessment can belong to one primary program and still be assigned to additional programs, batches or individual students."],

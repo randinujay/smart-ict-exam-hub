@@ -176,7 +176,7 @@ export function AssessmentPlayer({ assessment: initialAssessment, demoMode }: As
     setStarted(true);
   }
 
-  async function resumeAssessment(parsed: { answers?: AnswerMap; flagged?: string[]; currentIndex?: number; deadline?: number }) {
+  async function resumeAssessment(parsed: { attemptId?: string; answers?: AnswerMap; flagged?: string[]; currentIndex?: number; deadline?: number }) {
     setSubmitting(true);
     try {
       const response = await fetch(`/api/assessments/${initialAssessment.id}/start`, { method: "POST" });
@@ -188,9 +188,18 @@ export function AssessmentPlayer({ assessment: initialAssessment, demoMode }: As
       const restoredAssessment = payload.assessment as Assessment;
       setAssessment(restoredAssessment);
       setAttemptId(payload.attemptId);
-      setAnswers({ ...(payload.savedAnswers ?? {}), ...(parsed.answers ?? {}) });
-      setFlagged(Array.from(new Set([...(payload.flagged ?? []), ...(parsed.flagged ?? [])])));
-      setCurrentIndex(Math.min(parsed.currentIndex ?? 0, Math.max(restoredAssessment.questions.length - 1, 0)));
+      // localStorage is keyed only by assessment ID (shared across whoever uses this
+      // browser), not by account or attempt. On a shared/family device, a second
+      // student opening the same assessment would otherwise have the FIRST
+      // student's cached answers merged into their own attempt. Only trust the
+      // cached answers if they were saved under the exact attempt the server just
+      // resumed for the currently signed-in user; otherwise fall back to the
+      // server's own saved answers and drop the stale local copy.
+      const localStateMatchesAttempt = parsed.attemptId === payload.attemptId;
+      setAnswers({ ...(payload.savedAnswers ?? {}), ...(localStateMatchesAttempt ? parsed.answers ?? {} : {}) });
+      setFlagged(Array.from(new Set([...(payload.flagged ?? []), ...(localStateMatchesAttempt ? parsed.flagged ?? [] : [])])));
+      setCurrentIndex(localStateMatchesAttempt ? Math.min(parsed.currentIndex ?? 0, Math.max(restoredAssessment.questions.length - 1, 0)) : 0);
+      if (!localStateMatchesAttempt) window.localStorage.removeItem(storageKey);
       if (payload.deadlineAt) setRemaining(Math.max(0, Math.floor((new Date(payload.deadlineAt).getTime() - Date.now()) / 1000)));
       setStarted(true);
     } finally {
